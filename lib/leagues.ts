@@ -1,4 +1,4 @@
-export type League = {code:string;name:string;country:string;group:"Argentina"|"Europa"|"Femenino"|"Internacional";id:number|null;season:"calendar"|"europe"};
+export type League = {code:string;name:string;country:string;group:"Argentina"|"Europa"|"Femenino"|"Internacional"|"Selecciones";id:number|null;season:"calendar"|"europe"};
 export const LEAGUES:League[]=[
 {code:"arg",name:"Primera División",country:"Argentina",group:"Argentina",id:128,season:"calendar"},
 {code:"nacional",name:"Primera Nacional",country:"Argentina",group:"Argentina",id:129,season:"calendar"},
@@ -8,6 +8,7 @@ export const LEAGUES:League[]=[
 {code:"bundesliga",name:"Bundesliga",country:"Alemania",group:"Europa",id:78,season:"europe"},
 {code:"ligue1",name:"Ligue 1",country:"Francia",group:"Europa",id:61,season:"europe"},
 {code:"champions",name:"Champions League",country:"Europa",group:"Internacional",id:2,season:"europe"},
+{code:"selecciones",name:"Selecciones · Top 20 FIFA",country:"Mundo",group:"Selecciones",id:null,season:"calendar"},
 {code:"arg-fem",name:"Primera A femenina",country:"Argentina",group:"Femenino",id:null,season:"calendar"},
 {code:"eng-fem",name:"Women's Super League",country:"Inglaterra",group:"Femenino",id:null,season:"europe"},
 {code:"esp-fem",name:"Liga F",country:"España",group:"Femenino",id:null,season:"europe"},

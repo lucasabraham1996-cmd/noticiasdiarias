@@ -22,7 +22,8 @@ const ESPN: Record<string, string | null> = {
   "ger-fem": null,
   "fra-fem": "fra.w.1",
   "nws-fem": "usa.nwsl",
-  "uefa-fem": "uefa.wchampions"
+  "uefa-fem": "uefa.wchampions",
+  "selecciones": null
 };
 const root = "https://site.api.espn.com";
 type JsonRecord = Record<string, any>;
@@ -128,6 +129,40 @@ function leaders(json: JsonRecord, type: "goalsLeaders" | "assistsLeaders"): Pla
   });
 }
 
+
+/** Top 20 FIFA masculino oficial al 07-10-2026. Próxima actualización: 18-11-2026.
+ * Referencias: https://inside.fifa.com/fifa-rankings/world-ranking/men y
+ * https://betimate.com/en/fifa-ranking (tabla histórica al 7/10).
+ * No confundir con ranking FIFA en vivo. Cuando haya otra actualización, revisar esta lista.
+ */
+export const FIFA_TOP20_DATE = "2026-10-07";
+const TOP20_COUNTRIES: string[][] = [
+ ["spain","espana"],["argentina"],["france","francia"],["england","inglaterra"],
+ ["portugal"],["brazil","brasil"],["morocco","marruecos"],["belgium","belgica"],
+ ["netherlands","paises bajos","holland","holanda"],["mexico"],["colombia"],
+ ["switzerland","suiza"],["germany","alemania"],["croatia","croacia"],["italy","italia"],
+ ["united states","usa","estados unidos","usmnt"],["japan","japon"],["senegal"],
+ ["norway","noruega"],["uruguay"]
+];
+const countrySlug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z ]/g,"").trim().replace(/ +/g," ");
+const relevantNationalTeam = (name: string): boolean => TOP20_COUNTRIES.some(aliases=>aliases.includes(countrySlug(name)));
+async function nationalGames(date: string, name: string): Promise<SportsData> {
+ const slugs = ["fifa.friendly","uefa.nations","fifa.world","fifa.worldq.uefa","fifa.worldq.conmebol","fifa.worldq.concacaf"];
+ const requests = await Promise.allSettled(slugs.map(slug=>espn("/apis/site/v2/sports/soccer/"+slug+"/scoreboard?dates="+date.replace(/-/g,"")+"&limit=150",45)));
+ const matches: Game[] = [];
+ let successes=0;
+ for(const result of requests){
+  if(result.status!=="fulfilled") continue;
+  successes++;
+  for(const match of games(result.value,name)){
+   if(relevantNationalTeam(match.home)||relevantNationalTeam(match.away))matches.push(match);
+  }
+ }
+ if(successes===0)throw new Error("No respondió ninguna competición de selecciones");
+ const unique=[...new Map(matches.map(m=>[m.id,m])).values()].sort((a,b)=>a.date.localeCompare(b.date));
+ return {connected:true,updatedAt:new Date().toISOString(),league:name,matches:unique};
+}
+
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams;
   const code = q.get("league") || "arg";
@@ -137,6 +172,15 @@ export async function GET(req: NextRequest) {
   const now = new Date().toISOString();
   if (!Object.prototype.hasOwnProperty.call(ESPN, code) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date + "T12:00:00Z"))) {
     return NextResponse.json({ connected: false, updatedAt: now, error: "Competición o fecha inválida." }, { status: 400 });
+  }
+  if (code === "selecciones") {
+    if(mode === "standings") return NextResponse.json({connected:true,league:info.name,updatedAt:now,standings:[],scorers:[],assisters:[],error:"Las selecciones se presentan con partidos destacados del top 20 FIFA. Ranking masculino al 7/10/2026."});
+    try {
+      const matches = await nationalGames(date,info.name);
+      return NextResponse.json(matches,{headers:{"Cache-Control":"public, s-maxage=45, stale-while-revalidate=45"}});
+    } catch {
+      return NextResponse.json({connected:false,league:info.name,updatedAt:now,error:"La fuente gratuita de selecciones no respondió. No mostramos resultados ficticios."});
+    }
   }
   const slug = ESPN[code];
   if (!slug) {
