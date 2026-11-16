@@ -135,7 +135,7 @@ function leaders(json: JsonRecord, type: "goalsLeaders" | "assistsLeaders"): Pla
  * https://betimate.com/en/fifa-ranking (tabla histórica al 7/10).
  * No confundir con ranking FIFA en vivo. Cuando haya otra actualización, revisar esta lista.
  */
-export const FIFA_TOP20_DATE = "2026-10-07";
+const FIFA_TOP20_DATE = "2026-10-07";
 const TOP20_COUNTRIES: string[][] = [
  ["spain","espana"],["argentina"],["france","francia"],["england","inglaterra"],
  ["portugal"],["brazil","brasil"],["morocco","marruecos"],["belgium","belgica"],
