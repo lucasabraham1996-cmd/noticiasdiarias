@@ -39,7 +39,7 @@ function ArticleReader({item,onClose}:{item:Article;onClose:()=>void}){
  const [detailNote,setDetailNote]=useState("");
  useEffect(()=>{
   let alive=true;setFacts([]);setDetailsLoading(true);setDetailNote("");
-  fetch("/api/news/detail?url="+encodeURIComponent(item.url),{cache:"no-store"}).then(r=>r.json()).then(j=>{
+  fetch("/api/news/detail?url="+encodeURIComponent(item.url)+"&title="+encodeURIComponent(item.title),{cache:"no-store"}).then(r=>r.json()).then(j=>{
    if(!alive)return;setFacts(Array.isArray(j.questions)?j.questions:[]);setDetailNote(j.message||"");
   }).catch(()=>{if(alive)setDetailNote("No hay más detalles confirmados disponibles desde esta fuente.")}).finally(()=>{if(alive)setDetailsLoading(false)});
   return ()=>{alive=false};
