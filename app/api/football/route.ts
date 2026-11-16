@@ -116,7 +116,7 @@ function table(json: JsonRecord): Standing[] {
       });
     }
   }
-  return result;
+  return result.sort((a, b) => (a.group || "").localeCompare(b.group || "") || a.rank - b.rank);
 }
 function leaders(json: JsonRecord, type: "goalsLeaders" | "assistsLeaders"): Player[] {
   const ranking = (json.stats || []).find((x: any) => x.name === type);
