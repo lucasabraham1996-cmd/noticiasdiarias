@@ -7,7 +7,17 @@ async function api(path:string,age:number){
  const key=process.env.API_FOOTBALL_KEY;if(!key)throw new Error("Configurar API_FOOTBALL_KEY");
  const r=await fetch(endpoint+"/"+path,{headers:{"x-apisports-key":key},next:{revalidate:age}});
  if(!r.ok)throw new Error("Proveedor deportivo HTTP "+r.status);
- const j=await r.json();if(j.errors&&Object.keys(j.errors).length)throw new Error("Error del proveedor o cuota agotada");
+ const j=await r.json();if(j.errors&&Object.keys(j.errors).length){
+ const detail=JSON.stringify(j.errors).toLowerCase();
+ const message=/subscription|plan|season|coverage|not available/.test(detail)
+  ?"El plan de API-Football no permite consultar esta temporada o liga."
+  :/requests|quota|rate.limit|too many|limit/.test(detail)
+  ?"Se alcanzó el límite de solicitudes permitido por API-Football."
+  :/token|api.key|unauthoriz|invalid|access.denied|key/.test(detail)
+  ?"API-Football rechazó la clave o la autorización."
+  :"API-Football devolvió un error. Revisá el plan y las competiciones habilitadas.";
+ throw new Error(message);
+}
  return (j.response||[]) as any[];
 }
 export async function GET(req:NextRequest){
