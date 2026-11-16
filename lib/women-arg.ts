@@ -16,6 +16,8 @@ function crest(name:string):string|null{
  else if(k.includes("ferro"))k="ferro carril oeste";
  else if(k.includes("gimnasia"))k="gimnasia la plata";
  else if(k.includes("newell"))k="newells old boys";
+ else if(k==="racing")k="racing club";
+ else if(k==="river")k="river plate";
  else if(k.includes("talleres"))k="talleres cba";
  else if(k.includes("belgrano"))k="belgrano cba";
  else if(k.includes("huracan"))k="huracan";
@@ -99,5 +101,33 @@ export async function womenArgMatches(date:string):Promise<SportsData>{
 }
 export async function womenArgStandings():Promise<SportsData>{
  const updatedAt=new Date().toISOString();
- return {connected:true,updatedAt,league:"Primera A femenina · Argentina",standings:[],scorers:[],assisters:[],error:"Todavía no tenemos una tabla del Clausura 2026 verificable y actualizada. Los partidos de la Primera A femenina sí pueden consultarse por fecha."};
+ const source="https://elfemenino.com.ar/tabla-de-posiciones/";
+ try{
+  const response=await fetch(source,{next:{revalidate:900},headers:{"Accept":"text/html","User-Agent":"Mozilla/5.0 (compatible; NoticiasDiarias/1.0)"},signal:AbortSignal.timeout(9000)});
+  if(!response.ok)throw Error("Tabla femenina HTTP "+response.status);
+  const html=await response.text();
+  const anchor=html.search(/Torneo Clausura 2026/i);
+  if(anchor<0)throw Error("No hay Clausura 2026");
+  const tableHtml=html.slice(anchor).match(/<table\b[^>]*>([\s\S]*?)<\/table>/i)?.[1];
+  if(!tableHtml)throw Error("No se encontró la tabla");
+  const standings:Standing[]=[];
+  const rowsHtml=[...tableHtml.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
+  const names:Record<string,string>={
+   "Boca":"Boca Juniors","Talleres CBA":"Talleres (Córdoba)","Racing":"Racing Club",
+   "River":"River Plate","Ferro":"Ferro Carril Oeste","Belgrano":"Belgrano (Córdoba)",
+   "Gimnasia":"Gimnasia La Plata","Unión":"Unión (Santa Fe)","SAT":"S.A.T."
+  };
+  for(const row of rowsHtml){
+   const cells=[...row[1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(x=>clean(x[1]));
+   if(cells.length<10)continue;
+   const v=cells.map((x,i)=>i===1?NaN:Number(x.replace("+","")));
+   if(!Number.isInteger(v[0])||v[0]<1||v[0]>30||!cells[1])continue;
+   const team=names[cells[1]]||cells[1];
+   standings.push({rank:v[0],team,logo:crest(team),played:v[2],won:v[3],drawn:v[4],lost:v[5],gd:v[8],points:v[9]});
+  }
+  if(standings.length<12)throw Error("Tabla incompleta");
+  return {connected:true,updatedAt,league:"Primera A femenina · Torneo Clausura 2026",standings:standings.sort((a,b)=>a.rank-b.rank),scorers:[],assisters:[],error:"Tabla publicada por El Femenino; la actualización de posiciones puede demorarse respecto de los partidos en vivo."};
+ }catch{
+  return {connected:true,updatedAt,league:"Primera A femenina · Torneo Clausura 2026",standings:[],scorers:[],assisters:[],error:"La fuente de posiciones femeninas no respondió. Partidos y resultados disponibles en la pestaña Partidos."};
+ }
 }
