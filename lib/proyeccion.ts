@@ -5,7 +5,7 @@ import {channel,officialCrest} from "@/lib/branding";
 const source="https://www.ligaprofesional.ar/notas/proyeccion/2026/11/13/agenda-de-la-18/";
 type Fixture=[string,string,string,string,string,string];
 const fixtures:Fixture[]=[
- ["2026-11-17","15:00","Unión","Instituto","Zona A","Estadio 15 de Abril"],
+ ["2026-11-17","17:00","Unión","Instituto","Zona A","Estadio 15 de Abril"],
  ["2026-11-17","15:00","Gimnasia La Plata","Atlético Tucumán","Zona A","Estancia Chica"],
  ["2026-11-17","15:00","Independiente Rivadavia","Platense","Zona B","Ciudad Deportiva"],
  ["2026-11-17","15:00","San Lorenzo","Tigre","Zona A","Auxiliar"],
