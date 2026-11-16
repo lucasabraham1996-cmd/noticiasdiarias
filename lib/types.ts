@@ -1,5 +1,5 @@
 export type Category="Córdoba"|"Argentina"|"Política"|"Policiales"|"Economía"|"Deportes"|"Mundo"|"Espectáculos";
-export type Article={id:string;title:string;summary:string;url:string;source:string;category:Category;publishedAt:string;image?:string|null};
+export type Article={id:string;title:string;summary:string;url:string;source:string;category:Category;publishedAt:string;image?:string|null;body?:string;scope?:"local"|"national"|"world";isLcf?:boolean;sourceDomain?:string};
 export type WeatherDay={date:string;min:number;max:number;rainChance:number|null;rainMm:number|null;code:number;hail:"possible"|"not-quantified"};
 export type WeatherHour={time:string;temp:number;rainChance:number|null;rainMm:number|null;code:number;hail:"possible"|"not-quantified"};
 export type WeatherData={current:{temp:number;time:string;wind:number|null;code:number};days:WeatherDay[];hours:WeatherHour[];updatedAt:string;source:string};
