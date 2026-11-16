@@ -8,6 +8,7 @@ async function api(path:string,age:number){
  const r=await fetch(endpoint+"/"+path,{headers:{"x-apisports-key":key},next:{revalidate:age}});
  if(!r.ok)throw new Error("Proveedor deportivo HTTP "+r.status);
  const j=await r.json();if(j.errors&&Object.keys(j.errors).length){
+ console.warn("API_FOOTBALL_UPSTREAM_ERRORS",Object.entries(j.errors).map(([field,value])=>({field,reason:String(value).replace(/[a-f0-9]{24,}/ig,"[oculto]").slice(0,180)})));
  const detail=JSON.stringify(j.errors).toLowerCase();
  const message=/subscription|plan|season|coverage|not available/.test(detail)
   ?"El plan de API-Football no permite consultar esta temporada o liga."
