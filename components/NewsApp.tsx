@@ -212,8 +212,7 @@ export default function NewsApp(){
  const [homeGames,setHomeGames]=useState<Game[]>([]),[scoresUpdated,setScoresUpdated]=useState<string|null>(null);
  const [tab,setTab]=useState<Tab>("Portada"),[news,setNews]=useState<Article[]>([]),[lcfHeadline,setLcfHeadline]=useState<Article|null>(null),[weather,setWeather]=useState<WeatherData|null>(null),[edition,setEdition]=useState<Edition|null>(null),[menu,setMenu]=useState(false),[search,setSearch]=useState("");
  const getHomeScores=useCallback(async()=>{
-  const codes=["arg","nacional","arg-fem","selecciones","premier","laliga","seriea","bundesliga","ligue1"];
-  const rs=await Promise.allSettled(codes.map(code=>fetch("/api/football?"+new URLSearchParams({league:code,date:localDate(),mode:"matches"}),{cache:"no-store"}).then(r=>r.json())));
+  const rs=await Promise.allSettled(["Masculino","Femenino"].map(gender=>fetch("/api/football?"+new URLSearchParams({league:"todos",gender,date:localDate(),mode:"matches"}),{cache:"no-store"}).then(r=>r.json())));
   const all:Game[]=[];for(const x of rs)if(x.status==="fulfilled"&&x.value?.connected&&Array.isArray(x.value.matches))all.push(...x.value.matches);
   setHomeGames([...new Map(all.map(x=>[x.id+"|"+x.league,x])).values()]);setScoresUpdated(new Date().toISOString());
  },[]);
