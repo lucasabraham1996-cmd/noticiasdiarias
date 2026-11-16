@@ -84,7 +84,7 @@ export async function GET(){
  response.forEach((r,i)=>{if(r.status==="fulfilled")merged.push(...r.value);else errors.push("No respondió "+feeds[i].source)});
  const unique=[...new Map(merged.sort((a,b)=>(a.isLcf?0:1)-(b.isLcf?0:1)).map(x=>[norm(x.title),x])).values()];
  const sort=(a:Article,b:Article)=>Date.parse(b.publishedAt)-Date.parse(a.publishedAt);
- const recent=unique.filter(x=>Date.now()-Date.parse(x.publishedAt)<4*86400_000&&Date.parse(x.publishedAt)<Date.now()+86400_000);
+ const recent=unique.filter(x=>Date.now()-Date.parse(x.publishedAt)<(x.isLcf?7:4)*86400_000&&Date.parse(x.publishedAt)<Date.now()+86400_000);
  const local=recent.filter(x=>x.scope==="local").sort(sort).slice(0,70);
  const national=recent.filter(x=>x.scope!=="local").sort(sort).slice(0,20);
  const lcfWeight=(a:Article)=>/ascenso|campe[oó]n|final|suspend|primera [ab]|liga cordobesa|torneo|reprogram|clasificaci[oó]n|fecha [0-9]/i.test(a.title)?5:0;
