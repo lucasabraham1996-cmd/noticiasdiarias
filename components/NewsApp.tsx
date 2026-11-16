@@ -14,10 +14,69 @@ function dateLong(){return new Intl.DateTimeFormat("es-AR",{timeZone:tz,weekday:
 function iconWeather(code:number){if([95,96,99].includes(code))return <CloudLightning/>;if(code>=51&&code<=82)return <CloudRain/>;if(code===0||code===1)return <Sun/>;if(code===2)return <CloudSun/>;return <Cloud/>}
 function condition(code:number){if([95,96,99].includes(code))return "Tormentas";if(code>=51&&code<=82)return "Lluvias";if(code<2)return "Despejado";if(code===2)return "Parcialmente nublado";return "Nublado"}
 function safe(s?:string|null){return typeof s==="string"&&/^https:\/\//.test(s)?s:null}
-function NewsCard({item}:{item:Article}){const [img,setImg]=useState(Boolean(safe(item.image)));return <article className="article">
- {img&&safe(item.image)?<a href={item.url} className="article-image" target="_blank" rel="noopener noreferrer"><img src={item.image!} alt={item.title} loading="lazy" onError={()=>setImg(false)}/></a>:<div className="no-image"><Newspaper size={30}/><small>Sin fotografía asociada verificable</small></div>}
- <div className="article-copy"><div className="article-meta"><b>{item.category}</b><span>{dateText(item.publishedAt)}</span></div><a className="article-title" href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a><p>{item.summary||"Información de la fuente periodística original."}</p><div className="article-source"><span>{item.source}</span><a href={item.url} target="_blank" rel="noopener noreferrer" aria-label="Abrir fuente original"><ArrowUpRight size={18}/></a></div></div>
- </article>}
+
+function SourceBrand({item}:{item:Article}){
+ const domain=/^[a-z0-9.-]+$/i.test(item.sourceDomain||"")?item.sourceDomain||"":"";
+ const icon=domain?"https://www.google.com/s2/favicons?domain="+encodeURIComponent(domain)+"&sz=64":null;
+ const [failed,setFailed]=useState(false);
+ return <span className="source-brand">{icon&&!failed?<img src={icon} alt="" loading="lazy" onError={()=>setFailed(true)}/>:<span className="source-initial">{item.source.slice(0,1).toUpperCase()}</span>}<b>{item.source}</b></span>;
+}
+function NewsCard({item,onRead}:{item:Article;onRead:(item:Article)=>void}){
+ const [img,setImg]=useState(Boolean(safe(item.image)));
+ return <article className="article">
+  {img&&safe(item.image)?<button type="button" className="article-image" onClick={()=>onRead(item)} aria-label={"Leer noticia: "+item.title}><img src={item.image!} alt="" loading="lazy" onError={()=>setImg(false)}/></button>:<button type="button" className="no-image" onClick={()=>onRead(item)}><Newspaper size={30}/><small>Sin fotografía asociada verificable</small></button>}
+  <div className="article-copy">
+   <div className="article-meta"><b>{item.isLcf?"LIGA CORDOBESA":item.category}</b><span>{dateText(item.publishedAt)}</span></div>
+   <button type="button" className="article-title" onClick={()=>onRead(item)}>{item.title}</button>
+   <p>{item.summary||"Abrí esta tarjeta para leer la información disponible y su fuente."}</p>
+   <div className="article-source"><SourceBrand item={item}/><button type="button" className="read-inline" onClick={()=>onRead(item)}>LEER <ArrowRight size={16}/></button></div>
+  </div>
+ </article>;
+}
+function ArticleReader({item,onClose}:{item:Article;onClose:()=>void}){
+ useEffect(()=>{
+  const previous=document.body.style.overflow;
+  const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape")onClose()};
+  document.body.style.overflow="hidden";
+  window.addEventListener("keydown",onKey);
+  return ()=>{document.body.style.overflow=previous;window.removeEventListener("keydown",onKey)};
+ },[onClose]);
+ const raw=(item.body&&item.body.length>(item.summary||"").length?item.body:item.summary||item.body||"").trim();
+ const sentences=raw.match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map(x=>x.trim()).filter(Boolean)||[];
+ const paragraphs:string[]=[];
+ for(const sentence of sentences){
+  const last=paragraphs.length-1;
+  if(last>=0&&paragraphs[last].length+sentence.length<260)paragraphs[last]+=" "+sentence;
+  else paragraphs.push(sentence);
+ }
+ return <div className="reader-overlay" role="presentation" onMouseDown={e=>{if(e.currentTarget===e.target)onClose()}}>
+  <section className="reader-dialog" role="dialog" aria-modal="true" aria-label={item.title}>
+   <div className="reader-bar"><span>NOTICIAS DIARIAS · LECTURA</span><button type="button" onClick={onClose} aria-label="Cerrar noticia"><X size={23}/></button></div>
+   {safe(item.image)&&<img className="reader-photo" src={item.image!} alt="" onError={e=>e.currentTarget.style.display="none"}/>}
+   <div className="reader-body">
+    <div className="reader-cats"><span>{item.isLcf?"LIGA CORDOBESA":item.category}</span><time>{dateText(item.publishedAt)}</time></div>
+    <h1>{item.title}</h1>
+    <div className="reader-by"><SourceBrand item={item}/><span>Información del medio citado</span></div>
+    <div className="reader-article">
+     {paragraphs.length?paragraphs.map((p,i)=><p key={i}>{p}</p>):<p>La fuente no proporcionó un resumen verificable adicional al titular.</p>}
+    </div>
+    <div className="reader-disclosure">Este texto recoge únicamente el resumen disponible en la fuente. Cuando la noticia requiera más detalle que el publicado en el canal de noticias, se indicará sin agregar datos no verificados.</div>
+    <div className="reader-actions"><button type="button" onClick={onClose}>Volver a noticias</button><a href={item.url} target="_blank" rel="noopener noreferrer">Fuente original <ArrowUpRight size={17}/></a></div>
+   </div>
+  </section>
+ </div>;
+}
+function Crest({url,name,compact=false}:{url:string|null;name:string;compact?:boolean}){
+ const [attempt,setAttempt]=useState(0);
+ useEffect(()=>setAttempt(0),[url]);
+ const valid=safe(url);
+ const proxy=valid&&new URL(valid).hostname==="a.espncdn.com"?"/api/escudo?src="+encodeURIComponent(valid):valid;
+ const shown=attempt===0?proxy:attempt===1?valid:null;
+ const initials=name.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
+ return <span className={"crest-wrap"+(compact?" crest-small":"")} title={"Escudo de "+name}>
+  {shown?<img src={shown} alt={"Escudo "+name} referrerPolicy="no-referrer" onError={()=>setAttempt(v=>v+1)} loading="lazy"/>:<span className="crest-monogram" title="Escudo oficial no disponible">{initials||"—"}</span>}
+ </span>;
+}
 function WeatherCard({data,compact=false}:{data:WeatherData|null;compact?:boolean}){if(!data)return <section className="weather-panel"><CloudSun size={34}/><h3>El tiempo en Córdoba</h3><p>Consultando el pronóstico meteorológico...</p></section>;
  const day=data.days[0];const bands=[{name:"Mañana",start:6,end:12},{name:"Tarde",start:12,end:19},{name:"Noche",start:19,end:24}];
  return <section className="weather-panel"><div className="weather-tag"><span className="live-dot"/> CÓRDOBA CAPITAL <span>· {timeText(data.current.time)}</span></div>
@@ -28,44 +87,63 @@ function WeatherCard({data,compact=false}:{data:WeatherData|null;compact?:boolea
  </section>}
 function Score({m}:{m:Game}){const live=["1H","2H","HT","ET","BT","P","LIVE","INT"].includes(m.status);const done=["FT","AET","PEN"].includes(m.status);return <article className="match">
  <div className="match-top"><span>{m.round||m.league}</span><span className={live?"live-label":""}>{live?(m.elapsed==null?"EN VIVO":m.elapsed+"' EN VIVO"):done?"FINAL":m.status==="NS"?timeText(m.date):m.status}</span></div>
- <div className="match-center"><div className="team">{safe(m.homeLogo)?<img src={m.homeLogo!} alt={"Escudo "+m.home}/>:<div className="crest-empty">◇</div>}<strong>{m.home}</strong></div><div className="score"><strong>{m.homeScore==null?"VS":m.homeScore+" – "+(m.awayScore??"–")}</strong><small>{live?"En juego":done?"Finalizado":timeText(m.date)}</small></div><div className="team">{safe(m.awayLogo)?<img src={m.awayLogo!} alt={"Escudo "+m.away}/>:<div className="crest-empty">◇</div>}<strong>{m.away}</strong></div></div>
+ <div className="match-center"><div className="team"><Crest url={m.homeLogo} name={m.home}/><strong>{m.home}</strong></div><div className="score"><strong>{m.homeScore==null?"VS":m.homeScore+" – "+(m.awayScore??"–")}</strong><small>{live?"En juego":done?"Finalizado":timeText(m.date)}</small></div><div className="team"><Crest url={m.awayLogo} name={m.away}/><strong>{m.away}</strong></div></div>
  {(m.venue||m.referee)&&<div className="match-foot">{m.venue}{m.referee?" · Árbitro: "+m.referee:""}</div>}
  </article>}
-function Sports(){const [gender,setGender]=useState<"Masculino"|"Femenino">("Masculino"),[league,setLeague]=useState("arg"),[mode,setMode]=useState<"matches"|"standings">("matches"),[offset,setOffset]=useState(0);
+function Sports({lcf,onRead}:{lcf:Article|null;onRead:(item:Article)=>void}){const [gender,setGender]=useState<"Masculino"|"Femenino">("Masculino"),[league,setLeague]=useState("arg"),[mode,setMode]=useState<"matches"|"standings">("matches"),[offset,setOffset]=useState(0);
  const [result,setResult]=useState<SportsData|null>(null),[busy,setBusy]=useState(false);
  const leagues=LEAGUES.filter(l=>gender==="Femenino"?l.group==="Femenino":l.group!=="Femenino");
  const load=useCallback(async()=>{setBusy(true);try{const q=new URLSearchParams({league,date:shiftDay(offset),mode});const r=await fetch("/api/football?"+q,{cache:"no-store"});const j=await r.json();setResult(j)}catch{setResult({connected:false,updatedAt:new Date().toISOString(),error:"No fue posible consultar resultados en este momento."})}finally{setBusy(false)}},[league,offset,mode]);
  useEffect(()=>{void load();const t=setInterval(()=>void load(),60000);return()=>clearInterval(t)},[load]);
  return <section><div className="section-head"><span className="eyebrow"><Activity size={16}/> CENTRO DEPORTIVO</span><h1>Todos los partidos. <em>Un solo lugar.</em></h1><p>Argentina, Europa y fútbol femenino, con estadísticas y fuentes deportivas conectadas.</p></div>
- <div className="gender-switch"><button className={gender==="Masculino"?"chosen":""} onClick={()=>{setGender("Masculino");setLeague("arg")}}>Masculino</button><button className={gender==="Femenino"?"chosen":""} onClick={()=>{setGender("Femenino");setLeague("arg-fem")}}>Femenino</button></div>
+ <div className="gender-switch"><button className={gender==="Masculino"?"chosen":""} onClick={()=>{setGender("Masculino");setLeague("arg")}}>Masculino</button><button className={gender==="Femenino"?"chosen":""} onClick={()=>{setGender("Femenino");setLeague("eng-fem")}}>Femenino</button></div>
  <div className="league-menu">{leagues.map(l=><button key={l.code} className={l.code===league?"selected":""} onClick={()=>setLeague(l.code)}>{l.name}</button>)}</div>
- <div className="sports-toolbar"><div className="mode-buttons"><button className={mode==="matches"?"chosen":""} onClick={()=>setMode("matches")}>Partidos</button><button className={mode==="standings"?"chosen":""} onClick={()=>setMode("standings")}>Estadísticas</button></div><button className="refresh" onClick={()=>void load()}><RefreshCw size={16} className={busy?"spin":""}/> Actualizar</button></div>
+ {league==="selecciones"&&<div className="ranking-note"><Globe size={19}/> Solo partidos donde participa al menos una selección del top 20 FIFA masculino, según el ranking oficial del 7 de octubre de 2026. <a href="https://inside.fifa.com/fifa-rankings/world-ranking/men" target="_blank" rel="noopener noreferrer">Ranking oficial ↗</a></div>}
+ <div className="sports-toolbar"><div className="mode-buttons"><button className={mode==="matches"?"chosen":""} onClick={()=>setMode("matches")}>Partidos</button><button className={mode==="standings"?"chosen":""} disabled={league==="selecciones"} onClick={()=>setMode("standings")}>Estadísticas</button></div><button className="refresh" onClick={()=>void load()}><RefreshCw size={16} className={busy?"spin":""}/> Actualizar</button></div>
  {mode==="matches"&&<div className="date-strip">{[-2,-1,0,1,2,3,4].map(n=><button key={n} className={n===offset?"selected":""} onClick={()=>setOffset(n)}><small>{n===0?"HOY":new Intl.DateTimeFormat("es-AR",{weekday:"short",timeZone:"UTC"}).format(new Date(shiftDay(n)+"T12:00:00Z"))}</small><b>{shiftDay(n).slice(8)}</b></button>)}</div>}
  {!result&&<div className="empty"><RefreshCw className="spin"/> Buscando partidos reales...</div>}
  {result&&!result.connected&&<div className="empty"><WifiOff size={34}/><h3>Datos de la competición no disponibles</h3><p>{result.error}</p><small>La app nunca completa la grilla con resultados ficticios.</small></div>}
  {result?.connected&&mode==="matches"&&<><div className="content-caption">{result.matches?.length||0} partidos · {shiftDay(offset)} · {result.league}</div><div className="match-grid">{result.matches?.length?result.matches.map(m=><Score key={m.id} m={m}/>):<div className="empty">No hay partidos programados en esta competición para esa fecha.</div>}</div></>}
- {result?.connected&&mode==="standings"&&<><div className="table-panel"><h3>Tabla de posiciones · {result.league}</h3>{result.standings?.length?<div className="table-scroll"><table><thead><tr><th>#</th><th>Equipo</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>DG</th><th>Pts</th></tr></thead><tbody>{result.standings.map((s,i)=><tr key={s.team+i}><td>{s.rank}</td><td className="standing-team">{safe(s.logo)?<img src={s.logo!} alt=""/>:null}{s.team}{s.group&&<small>{s.group}</small>}</td><td>{s.played}</td><td>{s.won}</td><td>{s.drawn}</td><td>{s.lost}</td><td>{s.gd}</td><td><strong>{s.points}</strong></td></tr>)}</tbody></table></div>:<div className="empty">El proveedor no publica una tabla para esta competición.</div>}</div>
+ {result?.connected&&mode==="standings"&&<><div className="table-panel"><h3>Tabla de posiciones · {result.league}</h3>{result.standings?.length?<div className="table-scroll"><table><thead><tr><th>#</th><th>Equipo</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>DG</th><th>Pts</th></tr></thead><tbody>{result.standings.map((s,i)=><tr key={s.team+i}><td>{s.rank}</td><td className="standing-team"><Crest url={s.logo} name={s.team} compact/>{s.team}{s.group&&<small>{s.group}</small>}</td><td>{s.played}</td><td>{s.won}</td><td>{s.drawn}</td><td>{s.lost}</td><td>{s.gd}</td><td><strong>{s.points}</strong></td></tr>)}</tbody></table></div>:<div className="empty">El proveedor no publica una tabla para esta competición.</div>}</div>
  <div className="leaders-grid">{[{name:"Goleadores",list:result.scorers},{name:"Asistencias",list:result.assisters}].map(box=><div className="table-panel" key={box.name}><h3>{box.name} · Top 3</h3>{box.list?.length?box.list.map((p,i)=><div className="leader" key={i}><strong>{i+1}</strong><span><b>{p.name}</b><small>{p.team}</small></span><b>{p.value??"—"}</b></div>):<p>Sin datos disponibles para este ranking.</p>}</div>)}</div></>}
- <div className="lcf-note"><strong>Liga Cordobesa · Primera A y B</strong><p>Las noticias y estadísticas de clubes cordobeses, incluido All Boys de Rosedal, se publican solo con fuentes locales verificadas. No se lo confunde con All Boys de Buenos Aires.</p><a href="https://futboldecordoba.com.ar/" target="_blank" rel="noreferrer">Consultar Fútbol de Córdoba <ArrowUpRight size={16}/></a></div>
+ <div className="lcf-feature"><div className="lcf-header"><span>LIGA CORDOBESA DE FÚTBOL · ACTUALIDAD</span><p>Primera A, Primera B y fútbol femenino. Noticias locales verificadas, sin tablas simuladas.</p></div>{lcf?<NewsCard item={lcf} onRead={onRead}/>:<p className="lcf-empty">No encontramos una publicación local reciente que podamos verificar.</p>}</div>
  <div className="source-line"><Info size={16}/> Fuente: datos públicos de ESPN (API no oficial, sin garantía de continuidad). Resultados y escudos solo cuando ESPN los publica. La pantalla consulta cada 60 segundos; la actualización real depende de la fuente.</div></section>}
 function WeatherPage({data}:{data:WeatherData|null}){return <section><div className="section-head"><span className="eyebrow"><CloudSun size={16}/> METEOROLOGÍA</span><h1>El tiempo, <em>con detalle.</em></h1><p>Córdoba Capital · Temperatura, probabilidad de lluvia, granizo y pronóstico extendido.</p></div><WeatherCard data={data}/>{data&&<section className="hourly-panel"><h2>Próximas horas</h2><div className="hourly-list">{data.hours.filter(h=>h.time>=localDate()).slice(0,36).map((h:WeatherHour)=><div key={h.time} className="hour-row"><span>{h.time.slice(5,10)} · {h.time.slice(11,16)}</span>{iconWeather(h.code)}<b>{Math.round(h.temp)}°</b><span>{h.rainChance??"—"}% lluvia</span><span>{h.rainMm??"—"} mm</span></div>)}</div></section>}</section>}
-function Home({items,weather,edition,to}:{items:Article[];weather:WeatherData|null;edition:Edition|null;to:(t:Tab)=>void}){const list=useMemo(()=>{const ed:Article[]=edition?edition.stories.map((s,i)=>({id:edition.id+i,title:s.title,summary:s.body,url:s.url,source:s.source,category:s.category,publishedAt:edition.publishedAt,image:s.image})):[];return [...ed,...items]},[items,edition]);const headline=list.find(n=>safe(n.image))||list[0];const rest=list.filter(n=>n.id!==headline?.id);
- return <><div className="home-intro"><span className="eyebrow">EDICIÓN DIGITAL · CÓRDOBA / ARGENTINA</span><h1>Lo que pasa.<br/><em>Lo que importa.</em></h1><p>Información clara, fuentes identificadas y una mirada local.</p></div>
- <div className="home-layout"><div className="home-primary">{edition&&<div className="edition-bar"><small>EDICIÓN {edition.edition.toUpperCase()} · {timeText(edition.publishedAt)}</small><b>{edition.title}</b><p>{edition.summary}</p></div>}
- {headline?<a href={headline.url} target="_blank" rel="noopener noreferrer" className="headline-card">{safe(headline.image)?<img src={headline.image!} alt={headline.title}/>:<div className="headline-fallback"><Newspaper size={70}/><span>Sin fotografía verificable</span></div>}<div className="headline-shadow"/><div className="headline-body"><span>{headline.category.toUpperCase()} · {headline.source}</span><h2>{headline.title}</h2><p>{headline.summary}</p><b>LEER NOTICIA <ArrowUpRight size={17}/></b></div></a>:<div className="empty"><Newspaper size={45}/><h3>Preparando la portada</h3><p>No se recibieron noticias recientes de los medios consultados. No publicamos noticias inventadas.</p></div>}
- <div className="headline-section"><div><small>LO ÚLTIMO</small><h2>Actualidad en foco</h2></div><span>{items.length} publicaciones</span></div><div className="article-grid">{rest.slice(0,12).map((n,i)=><NewsCard item={n} key={n.id+i}/>)}</div></div>
- <aside className="home-aside"><WeatherCard compact data={weather}/><button className="aside-btn" onClick={()=>to("El tiempo")}>Ver pronóstico completo <ArrowRight size={16}/></button><div className="sports-promo"><Trophy/><h3>El fútbol,<br/>al instante.</h3><p>Primera, Nacional, Europa, femenino y calendario de siete días.</p><button onClick={()=>to("Deportes")}>Ir a deportes <ArrowRight size={18}/></button></div><div className="edition-promo"><CalendarDays size={22}/><h3>Dos ediciones por día</h3><p>Las notas editoriales aparecen cuando se publican en el registro de GitHub.</p></div></aside></div></>}
+
+function Home({items,weather,edition,to,onRead}:{items:Article[];weather:WeatherData|null;edition:Edition|null;to:(t:Tab)=>void;onRead:(item:Article)=>void}){
+ const list=useMemo(()=>{
+  const ed:Article[]=edition?edition.stories.map((s,i)=>({id:edition.id+i,title:s.title,summary:s.body,body:s.body,url:s.url,source:s.source,category:s.category,publishedAt:edition.publishedAt,image:s.image,scope:"local"})):[];
+  return [...ed,...items];
+ },[items,edition]);
+ const locals=list.filter(n=>n.scope==="local");
+ const nationals=list.filter(n=>n.scope!=="local");
+ const lcf=locals.find(n=>n.isLcf);
+ const headline=locals.find(n=>safe(n.image))||locals[0]||list[0];
+ const localFirst=locals.filter(n=>n.id!==headline?.id);
+ const pinned=lcf&&lcf.id!==headline?.id?[lcf]:[];
+ const rest=[...pinned,...localFirst.filter(n=>n.id!==lcf?.id).slice(0,9),...nationals.slice(0,3)].filter((n,i,a)=>a.findIndex(x=>x.id===n.id)===i).slice(0,12);
+ return <><div className="home-intro"><span className="eyebrow">EL DIARIO DE CÓRDOBA · NOTICIAS ACTUALIZADAS</span><h1>Lo que pasa.<br/><em>Lo que importa.</em></h1><p>Primero Córdoba. Lo más relevante de Argentina y el mundo, con datos y fuentes identificados.</p></div>
+ <div className="home-layout"><div className="home-primary">
+ {edition&&<div className="edition-bar"><small>EDICIÓN {edition.edition.toUpperCase()} · {timeText(edition.publishedAt)}</small><b>{edition.title}</b><p>{edition.summary}</p></div>}
+ {headline?<button type="button" onClick={()=>onRead(headline)} className="headline-card">{safe(headline.image)?<img src={headline.image!} alt="" onError={e=>e.currentTarget.style.display="none"}/>:<div className="headline-fallback"><Newspaper size={70}/><span>Sin fotografía verificable</span></div>}<div className="headline-shadow"/><div className="headline-body"><span>{headline.isLcf?"LIGA CORDOBESA":headline.category.toUpperCase()} · {headline.source}</span><h2>{headline.title}</h2><p>{headline.summary}</p><b>LEER NOTICIA <ArrowUpRight size={17}/></b></div></button>:<div className="empty"><Newspaper size={45}/><h3>Preparando la portada</h3><p>No se recibieron noticias recientes de los medios consultados. No publicamos noticias inventadas.</p></div>}
+ <div className="headline-section"><div><small>EN CÓRDOBA · Y LO ESENCIAL DEL PAÍS</small><h2>Actualidad en foco</h2></div><span>{locals.length} noticias locales</span></div>
+ <div className="article-grid">{rest.map((n,i)=><NewsCard item={n} onRead={onRead} key={n.id+i}/>)}</div>
+ </div><aside className="home-aside"><WeatherCard compact data={weather}/><button className="aside-btn" onClick={()=>to("El tiempo")}>Ver pronóstico completo <ArrowRight size={16}/></button><div className="sports-promo"><Trophy/><h3>El fútbol,<br/>al instante.</h3><p>Primera, Nacional, Europa, femenino y selecciones del top 20 FIFA.</p><button onClick={()=>to("Deportes")}>Ir a deportes <ArrowRight size={18}/></button></div><div className="edition-promo"><CalendarDays size={22}/><h3>Ediciones de mañana y tarde</h3><p>Los resúmenes editoriales aparecen cuando son publicados en el registro de GitHub; la información de los medios se actualiza cada cinco minutos.</p></div></aside></div></>;
+}
 export default function NewsApp(){
+ const [selectedArticle,setSelectedArticle]=useState<Article|null>(null);
  const [tab,setTab]=useState<Tab>("Portada"),[news,setNews]=useState<Article[]>([]),[weather,setWeather]=useState<WeatherData|null>(null),[edition,setEdition]=useState<Edition|null>(null),[menu,setMenu]=useState(false),[search,setSearch]=useState("");
  const getNews=useCallback(async()=>{try{const r=await fetch("/api/news");if(r.ok){const j=await r.json();setNews(j.items||[])}}catch{}},[]);
  const getWeather=useCallback(async()=>{try{const r=await fetch("/api/weather");if(r.ok)setWeather(await r.json())}catch{}},[]);
  const getEd=useCallback(async()=>{try{const r=await fetch("/api/edition");if(r.ok){const j=await r.json();setEdition([...(j.editions||[])].sort((a:Edition,b:Edition)=>b.publishedAt.localeCompare(a.publishedAt))[0]||null)}}catch{}},[]);
  useEffect(()=>{void getNews();void getWeather();void getEd();const n=setInterval(()=>{void getNews();void getEd()},300000),w=setInterval(()=>void getWeather(),600000);return()=>{clearInterval(n);clearInterval(w)}},[getNews,getWeather,getEd]);
+ const lcfStory=useMemo(()=>news.filter(n=>n.isLcf).sort((a,b)=>Date.parse(b.publishedAt)-Date.parse(a.publishedAt))[0]||null,[news]);
  const articles=useMemo(()=>news.filter(n=>(tab==="Portada"||tab===n.category)&&(!search||(n.title+" "+n.summary).toLocaleLowerCase("es").includes(search.toLocaleLowerCase("es")))),[news,tab,search]);
  const navigate=(t:Tab)=>{setTab(t);setMenu(false);setSearch("");window.scrollTo({top:0,behavior:"smooth"})};
  return <div className="shell"><header className="header"><div className="header-inner"><button className="brand" onClick={()=>navigate("Portada")}><span className="brand-sign">N<b>.</b></span><span><strong>NOTICIAS DIARIAS</strong><small>CÓRDOBA · ARGENTINA</small></span></button><div className="today"><span className="live-dot"/>{dateLong()}</div><div className="location"><MapPin size={15}/> Córdoba Capital</div><button className="menu-button" aria-label="Abrir navegación" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button></div></header>
  <nav className={"top-nav "+(menu?"show":"")}><div>{tabs.map(t=><button className={tab===t?"active":""} key={t} onClick={()=>navigate(t)}>{t}</button>)}</div></nav>
- <main className="main">{tab==="Portada"?<Home items={articles} weather={weather} edition={edition} to={navigate}/>:tab==="Deportes"?<Sports/>:tab==="El tiempo"?<WeatherPage data={weather}/>:<section><div className="section-head"><span className="eyebrow"><Newspaper size={16}/> NOTICIAS DIARIAS · {tab.toUpperCase()}</span><h1>{tab==="Córdoba"?"Córdoba, en foco.":tab==="Policiales"?"Policiales y justicia.":tab==="Política"?"Política y elecciones.":tab==="Economía"?"Economía real.":tab==="Espectáculos"?"Cultura y tendencias.":tab==="Mundo"?"El mundo hoy.":"La actualidad argentina."}</h1><p>Noticias recientes de medios identificados, organizadas para una lectura ágil.</p></div><div className="searchbar"><span>{articles.length} publicaciones</span><label><Search size={17}/><input placeholder="Buscar noticias" value={search} onChange={e=>setSearch(e.target.value)}/></label></div>{articles.length?<div className="article-grid">{articles.map((n,i)=><NewsCard key={n.id+i} item={n}/>)}</div>:<div className="empty">No hay publicaciones verificadas recientes en esta sección. Volvé a consultar más tarde.</div>}</section>}</main>
+ <main className="main">{tab==="Portada"?<Home items={articles} weather={weather} edition={edition} to={navigate} onRead={setSelectedArticle}/>:tab==="Deportes"?<Sports lcf={lcfStory} onRead={setSelectedArticle}/>:tab==="El tiempo"?<WeatherPage data={weather}/>:<section><div className="section-head"><span className="eyebrow"><Newspaper size={16}/> NOTICIAS DIARIAS · {tab.toUpperCase()}</span><h1>{tab==="Córdoba"?"Córdoba, en foco.":tab==="Policiales"?"Policiales y justicia.":tab==="Política"?"Política y elecciones.":tab==="Economía"?"Economía real.":tab==="Espectáculos"?"Cultura y tendencias.":tab==="Mundo"?"El mundo hoy.":"La actualidad argentina."}</h1><p>Noticias recientes de medios identificados, organizadas para una lectura ágil.</p></div><div className="searchbar"><span>{articles.length} publicaciones</span><label><Search size={17}/><input placeholder="Buscar noticias" value={search} onChange={e=>setSearch(e.target.value)}/></label></div>{articles.length?<div className="article-grid">{articles.map((n,i)=><NewsCard key={n.id+i} item={n} onRead={setSelectedArticle}/>)}</div>:<div className="empty">No hay publicaciones verificadas recientes en esta sección. Volvé a consultar más tarde.</div>}</section>}</main>
  <footer className="footer"><div><strong>NOTICIAS DIARIAS<span>.</span></strong><p>Información con fuentes · Actualidad, deportes y clima en Córdoba.</p></div><a href="https://www.smn.gob.ar/alertas" target="_blank" rel="noreferrer">Alertas oficiales <ExternalLink size={14}/></a></footer>
+ {selectedArticle&&<ArticleReader item={selectedArticle} onClose={()=>setSelectedArticle(null)}/>}
  <nav className="mobile-nav"><button className={tab==="Portada"?"active":""} onClick={()=>navigate("Portada")}><Newspaper size={20}/>Portada</button><button className={tab==="Córdoba"?"active":""} onClick={()=>navigate("Córdoba")}><Compass size={20}/>Córdoba</button><button className={tab==="Deportes"?"active":""} onClick={()=>navigate("Deportes")}><Trophy size={20}/>Deportes</button><button className={tab==="El tiempo"?"active":""} onClick={()=>navigate("El tiempo")}><CloudSun size={20}/>Tiempo</button></nav></div>
 }
