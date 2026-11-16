@@ -86,6 +86,10 @@ function games(json: JsonRecord, leagueName: string): Game[] {
     if (!c || !home?.team?.displayName || !away?.team?.displayName || id === null) continue;
     const state = matchStatus(c);
     const clock=String(c?.status?.displayClock||event?.status?.displayClock||"").trim();
+    const seconds=num(c?.status?.clock??event?.status?.clock);
+    const minutesMatch=clock.match(/^(\d{1,3})'/);
+    const withSeconds=seconds!==null&&seconds>=0&&minutesMatch&&Math.abs(Math.floor(seconds/60)-Number(minutesMatch[1]))<=1;
+    const precise=withSeconds?`${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,"0")}`:null;
     const localCast=(c?.geoBroadcasts||[]).filter((b:any)=>String(b?.region||"").toLowerCase()==="ar").map((b:any)=>String(b?.media?.shortName||"")).filter(Boolean);
     const broadcasts=[...new Set(localCast)].map(n=>channel(String(n))).filter((x):x is NonNullable<ReturnType<typeof channel>>=>!!x);
     const started = state.status !== "NS" && state.status !== "PST" && state.status !== "CANC";
@@ -104,7 +108,7 @@ function games(json: JsonRecord, leagueName: string): Game[] {
       awayScore: started ? num(away.score?.displayValue ?? away.score) : null,
       status: state.status,
       elapsed: state.elapsed,
-      clock: state.status==="1H"||state.status==="2H"||state.status==="LIVE"?clock||null:null,
+      clock: state.status==="1H"||state.status==="2H"||state.status==="LIVE"?(clock.includes("+")?clock:clock.includes(":")?clock:precise||clock||null):null,
       broadcasts,
       sourceName:"ESPN",sourceUrl:"https://www.espn.com.ar/futbol/"
     });
