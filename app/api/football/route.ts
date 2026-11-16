@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { leagueInfo, seasonOf } from "@/lib/leagues";
+import { officialCrest, channel } from "@/lib/branding";
+import { proyeccionMatches, proyeccionStandings } from "@/lib/proyeccion";
 import { womenArgMatches, womenArgStandings } from "@/lib/women-arg";
 import type { Game, Standing, Player, SportsData } from "@/lib/types";
 
@@ -8,7 +10,15 @@ export const dynamic = "force-dynamic";
 // ESPN public site data (unofficial/undocumented, no API key). Never imply official affiliation.
 // Fixed league map: no user-controlled upstream URL, and no fictional fallback scores.
 const ESPN: Record<string, string | null> = {
+  todos: null,
   arg: "arg.1",
+  copa:"arg.copa",
+  supercopa:"arg.supercopa",
+  "supercopa-int":null,
+  trofeo:null,
+  proyeccion:null,
+  "primera-b":"arg.3",
+  "primera-c":"arg.4",
   nacional: "arg.2",
   premier: "eng.1",
   laliga: "esp.1",
@@ -75,6 +85,9 @@ function games(json: JsonRecord, leagueName: string): Game[] {
     const id = num(event.id);
     if (!c || !home?.team?.displayName || !away?.team?.displayName || id === null) continue;
     const state = matchStatus(c);
+    const clock=String(c?.status?.displayClock||event?.status?.displayClock||"").trim();
+    const localCast=(c?.geoBroadcasts||[]).filter((b:any)=>String(b?.region||"").toLowerCase()==="ar").map((b:any)=>String(b?.media?.shortName||"")).filter(Boolean);
+    const broadcasts=[...new Set(localCast)].map(n=>channel(n)).filter((x):x is NonNullable<ReturnType<typeof channel>>=>!!x);
     const started = state.status !== "NS" && state.status !== "PST" && state.status !== "CANC";
     found.push({
       id,
@@ -85,12 +98,15 @@ function games(json: JsonRecord, leagueName: string): Game[] {
       referee: c.officials?.find((x: any) => /referee/i.test(x?.position?.name || x?.position?.displayName || ""))?.displayName || null,
       home: String(home.team.displayName),
       away: String(away.team.displayName),
-      homeLogo: logo(home.team),
-      awayLogo: logo(away.team),
+      homeLogo: officialCrest(String(home.team.displayName),logo(home.team)),
+      awayLogo: officialCrest(String(away.team.displayName),logo(away.team)),
       homeScore: started ? num(home.score?.displayValue ?? home.score) : null,
       awayScore: started ? num(away.score?.displayValue ?? away.score) : null,
       status: state.status,
-      elapsed: state.elapsed
+      elapsed: state.elapsed,
+      clock: state.status==="1H"||state.status==="2H"||state.status==="LIVE"?clock||null:null,
+      broadcasts,
+      sourceName:"ESPN",sourceUrl:"https://www.espn.com.ar/futbol/"
     });
   }
   return found.sort((a, b) => a.date.localeCompare(b.date));
@@ -107,7 +123,7 @@ function table(json: JsonRecord): Standing[] {
       result.push({
         rank: stat(row, ["rank", "playoffSeed"]) ?? num(row?.rank) ?? i + 1,
         team: String(row.team.displayName),
-        logo: logo(row.team),
+        logo: officialCrest(String(row.team.displayName),logo(row.team)),
         played: stat(row, ["gamesPlayed"]) ?? 0,
         won: stat(row, ["wins"]) ?? 0,
         drawn: stat(row, ["ties", "draws"]) ?? 0,
@@ -175,11 +191,36 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ connected: false, updatedAt: now, error: "Competición o fecha inválida." }, { status: 400 });
   }
   if (code === "arg-fem") return NextResponse.json(mode === "standings" ? await womenArgStandings() : await womenArgMatches(date), {headers:{"Cache-Control":"public, s-maxage=60, stale-while-revalidate=60"}});
+  if(code==="proyeccion")return NextResponse.json(mode==="standings"?await proyeccionStandings():await proyeccionMatches(date),{headers:{"Cache-Control":"public, s-maxage=120, stale-while-revalidate=120"}});
+  if(code==="trofeo"||code==="supercopa-int")return NextResponse.json({
+   connected:true,league:info.name,updatedAt:now,matches:[],standings:[],scorers:[],assisters:[],
+   message:code==="trofeo"?"Trofeo de Campeones 2026: final programada el 19 de diciembre en el estadio Mario Alberto Kempes, Córdoba. Equipos a confirmar.":"Supercopa Internacional 2026: final disputada el 26 de septiembre. Rosario Central ganó a Estudiantes por 3–1.",
+   sourceName:"Liga Profesional de Fútbol",sourceUrl:"https://www.ligaprofesional.ar/"
+  });
+  if(code==="todos"){
+    if(mode==="standings")return NextResponse.json({connected:true,updatedAt:now,league:"TODOS",standings:[],message:"Elegí una liga para consultar su tabla particular."});
+    const gender=q.get("gender")==="Femenino"?"Femenino":"Masculino";
+    const list=gender==="Femenino"?["arg-fem","eng-fem","esp-fem","fra-fem","nws-fem","uefa-fem"]:
+      ["arg","nacional","copa","supercopa","primera-b","primera-c","premier","laliga","seriea","bundesliga","ligue1","champions","selecciones","proyeccion"];
+    const rows=await Promise.allSettled(list.map(async code=>{
+      if(code==="arg-fem")return (await womenArgMatches(date)).matches||[];
+      if(code==="proyeccion")return (await proyeccionMatches(date)).matches||[];
+      if(code==="selecciones")return (await nationalGames(date,"Selecciones")).matches||[];
+      const slug=ESPN[code];if(!slug)return [];
+      const data=await espn("/apis/site/v2/sports/soccer/"+slug+"/scoreboard?dates="+date.replace(/-/g,"")+"&limit=100",20);
+      return games(data,leagueInfo(code).name);
+    }));
+    const matches=rows.flatMap((r)=>r.status==="fulfilled"?r.value:[]);
+    matches.sort((a,b)=>a.date.localeCompare(b.date));
+    return NextResponse.json({connected:rows.some(r=>r.status==="fulfilled"),league:"TODOS",updatedAt:now,matches,
+      message:"Todos los partidos informados por las fuentes conectadas. Algunas competencias no entregan datos en tiempo real."},
+      {headers:{"Cache-Control":"public, s-maxage=20, stale-while-revalidate=20"}});
+  }
   if (code === "selecciones") {
     if(mode === "standings") return NextResponse.json({connected:true,league:info.name,updatedAt:now,standings:[],scorers:[],assisters:[],error:"Las selecciones se presentan con partidos destacados del top 20 FIFA. Ranking masculino al 7/10/2026."});
     try {
       const matches = await nationalGames(date,info.name);
-      return NextResponse.json(matches,{headers:{"Cache-Control":"public, s-maxage=45, stale-while-revalidate=45"}});
+      return NextResponse.json(matches,{headers:{"Cache-Control":"public, s-maxage=20, stale-while-revalidate=20"}});
     } catch {
       return NextResponse.json({connected:false,league:info.name,updatedAt:now,error:"La fuente gratuita de selecciones no respondió. No mostramos resultados ficticios."});
     }
@@ -207,7 +248,7 @@ export async function GET(req: NextRequest) {
       };
       return NextResponse.json(data, { headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300" } });
     }
-    const j = await espn(prefix + "/scoreboard?dates=" + date.replace(/-/g, "") + "&limit=100", 45);
+    const j = await espn(prefix + "/scoreboard?dates=" + date.replace(/-/g, "") + "&limit=100", 20);
     return NextResponse.json({
       connected: true, updatedAt: now, league: info.name, matches: games(j, info.name)
     } satisfies SportsData, { headers: { "Cache-Control": "public, s-maxage=45, stale-while-revalidate=45" } });

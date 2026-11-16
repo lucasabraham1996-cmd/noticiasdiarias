@@ -1,10 +1,10 @@
 export type Category="Córdoba"|"Argentina"|"Política"|"Policiales"|"Economía"|"Deportes"|"Mundo"|"Espectáculos";
-export type Article={id:string;title:string;summary:string;url:string;source:string;category:Category;publishedAt:string;image?:string|null;body?:string;scope?:"local"|"national"|"world";isLcf?:boolean;sourceDomain?:string};
+export type Article={id:string;title:string;summary:string;url:string;source:string;category:Category;publishedAt:string;image?:string|null;body?:string;questions?:{question:string;answer:string}[];scope?:"local"|"national"|"world";isLcf?:boolean;sourceDomain?:string};
 export type WeatherDay={date:string;min:number;max:number;rainChance:number|null;rainMm:number|null;code:number;hail:"possible"|"not-quantified"};
 export type WeatherHour={time:string;temp:number;rainChance:number|null;rainMm:number|null;code:number;hail:"possible"|"not-quantified"};
 export type WeatherData={current:{temp:number;time:string;wind:number|null;code:number};days:WeatherDay[];hours:WeatherHour[];updatedAt:string;source:string};
-export type Game={id:number;date:string;league:string;round:string|null;venue:string|null;referee:string|null;home:string;away:string;homeLogo:string|null;awayLogo:string|null;homeScore:number|null;awayScore:number|null;status:string;elapsed:number|null};
-export type Standing={rank:number;team:string;logo:string|null;played:number;won:number;drawn:number;lost:number;gd:number;points:number;group?:string};
+export type Game={id:number;date:string;league:string;round:string|null;venue:string|null;referee:string|null;home:string;away:string;homeLogo:string|null;awayLogo:string|null;homeScore:number|null;awayScore:number|null;status:string;elapsed:number|null;clock?:string|null;broadcasts?:{name:string;logo:string;url:string;region?:string}[];sourceUrl?:string;sourceName?:string};
+export type Standing={rank:number;team:string;logo:string|null;played:number;won:number;drawn:number;lost:number;gd:number;points:number;group?:string;qualification?:string};
 export type Player={name:string;team:string;value:number|null};
-export type SportsData={connected:boolean;updatedAt:string;league?:string;matches?:Game[];standings?:Standing[];scorers?:Player[];assisters?:Player[];error?:string};
+export type SportsData={connected:boolean;updatedAt:string;league?:string;matches?:Game[];standings?:Standing[];scorers?:Player[];assisters?:Player[];error?:string;sourceUrl?:string;sourceName?:string;message?:string};
 export type Edition={id:string;edition:"mañana"|"tarde";publishedAt:string;title:string;summary:string;stories:{title:string;body:string;url:string;image?:string|null;category:Category;source:string}[]};

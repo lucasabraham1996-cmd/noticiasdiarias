@@ -1,6 +1,14 @@
-export type League = {code:string;name:string;country:string;group:"Argentina"|"Europa"|"Femenino"|"Internacional"|"Selecciones";id:number|null;season:"calendar"|"europe"};
+export type League = {code:string;name:string;country:string;group:"Argentina"|"Europa"|"Femenino"|"Internacional"|"Selecciones"|"Todos";id:number|null;season:"calendar"|"europe"};
 export const LEAGUES:League[]=[
+{code:"todos",name:"TODOS",country:"Mundo",group:"Todos",id:null,season:"calendar"},
 {code:"arg",name:"Primera División",country:"Argentina",group:"Argentina",id:128,season:"calendar"},
+{code:"copa",name:"Copa Argentina",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
+{code:"supercopa",name:"Supercopa Argentina",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
+{code:"supercopa-int",name:"Supercopa Internacional",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
+{code:"trofeo",name:"Trofeo de Campeones",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
+{code:"proyeccion",name:"Torneo Proyección · Reserva",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
+{code:"primera-b",name:"Primera B Metropolitana",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
+{code:"primera-c",name:"Primera C",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
 {code:"nacional",name:"Primera Nacional",country:"Argentina",group:"Argentina",id:129,season:"calendar"},
 {code:"premier",name:"Premier League",country:"Inglaterra",group:"Europa",id:39,season:"europe"},
 {code:"laliga",name:"LaLiga",country:"España",group:"Europa",id:140,season:"europe"},
