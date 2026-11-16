@@ -7,6 +7,8 @@ export const LEAGUES:League[]=[
 {code:"supercopa-int",name:"Supercopa Internacional",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
 {code:"trofeo",name:"Trofeo de Campeones",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
 {code:"proyeccion",name:"Torneo Proyección · Reserva",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
+{code:"federal-a",name:"Torneo Federal A",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
+{code:"trofeo-proyeccion",name:"Trofeo de Campeones · Proyección",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
 {code:"primera-b",name:"Primera B Metropolitana",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
 {code:"primera-c",name:"Primera C",country:"Argentina",group:"Argentina",id:null,season:"calendar"},
 {code:"nacional",name:"Primera Nacional",country:"Argentina",group:"Argentina",id:129,season:"calendar"},

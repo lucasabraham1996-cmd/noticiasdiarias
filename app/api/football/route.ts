@@ -17,6 +17,8 @@ const ESPN: Record<string, string | null> = {
   "supercopa-int":null,
   trofeo:null,
   proyeccion:null,
+  "federal-a":null,
+  "trofeo-proyeccion":null,
   "primera-b":"arg.3",
   "primera-c":"arg.4",
   nacional: "arg.2",
@@ -196,6 +198,16 @@ export async function GET(req: NextRequest) {
   }
   if (code === "arg-fem") return NextResponse.json(mode === "standings" ? await womenArgStandings() : await womenArgMatches(date), {headers:{"Cache-Control":"public, s-maxage=60, stale-while-revalidate=60"}});
   if(code==="proyeccion")return NextResponse.json(mode==="standings"?await proyeccionStandings():await proyeccionMatches(date),{headers:{"Cache-Control":"public, s-maxage=120, stale-while-revalidate=120"}});
+  if(code==="federal-a")return NextResponse.json({
+   connected:true,league:info.name,updatedAt:now,matches:[],standings:[],scorers:[],assisters:[],
+   message:"Torneo Federal A 2026: Campeonato y Reválida, con fases eliminatorias. Consultá los resultados oficiales; la fuente gratuita actual no publica un marcador minuto a minuto verificado.",
+   sourceName:"Asociación del Fútbol Argentino",sourceUrl:"https://www.afa.com.ar/es/posts/torneo-federal-a-definidos-los-cruces-de-los-cuartos-de-final"
+  });
+  if(code==="trofeo-proyeccion")return NextResponse.json({
+   connected:true,league:info.name,updatedAt:now,matches:[],standings:[],scorers:[],assisters:[],
+   message:"Trofeo de Campeones de Proyección 2026: final programada por la LPF el 15 de diciembre. Equipos a confirmar tras los torneos.",
+   sourceName:"Liga Profesional de Fútbol",sourceUrl:"https://www.ligaprofesional.ar/proyeccion-clausura-2026/"
+  });
   if(code==="trofeo"||code==="supercopa-int")return NextResponse.json({
    connected:true,league:info.name,updatedAt:now,matches:[],standings:[],scorers:[],assisters:[],
    message:code==="trofeo"?"Trofeo de Campeones 2026: final programada el 19 de diciembre en el estadio Mario Alberto Kempes, Córdoba. Equipos a confirmar.":"Supercopa Internacional 2026: final disputada el 26 de septiembre. Rosario Central ganó a Estudiantes por 3–1.",
