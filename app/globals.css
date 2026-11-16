@@ -327,3 +327,9 @@ tr.danger{background:#ab4a5814}
  .qualification-legend span{font-size:9px}
  .reader-qa p{font-size:14px}
 }
+
+.home-live-match .broadcast-compact{justify-content:center;min-height:25px;margin-top:4px;padding-top:5px}
+.home-live-match .broadcast-compact .broadcast-label{display:none}
+.home-live-match .broadcast-compact .broadcast-channel{font-size:9px;padding:3px 5px;max-width:100%}
+.home-live-match .broadcast-compact .broadcast-channel img{height:14px;width:14px}
+.home-live-match .broadcast-compact .broadcast-unconfirmed{font-size:9px;text-align:center}
