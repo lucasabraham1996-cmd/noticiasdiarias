@@ -34,6 +34,16 @@ function NewsCard({item,onRead}:{item:Article;onRead:(item:Article)=>void}){
  </article>;
 }
 function ArticleReader({item,onClose}:{item:Article;onClose:()=>void}){
+ const [facts,setFacts]=useState<{question:string;answer:string}[]>([]);
+ const [detailsLoading,setDetailsLoading]=useState(true);
+ const [detailNote,setDetailNote]=useState("");
+ useEffect(()=>{
+  let alive=true;setFacts([]);setDetailsLoading(true);setDetailNote("");
+  fetch("/api/news/detail?url="+encodeURIComponent(item.url),{cache:"no-store"}).then(r=>r.json()).then(j=>{
+   if(!alive)return;setFacts(Array.isArray(j.questions)?j.questions:[]);setDetailNote(j.message||"");
+  }).catch(()=>{if(alive)setDetailNote("No hay más detalles confirmados disponibles desde esta fuente.")}).finally(()=>{if(alive)setDetailsLoading(false)});
+  return ()=>{alive=false};
+ },[item.url]);
  useEffect(()=>{
   const previous=document.body.style.overflow;
   const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape")onClose()};
@@ -60,7 +70,12 @@ function ArticleReader({item,onClose}:{item:Article;onClose:()=>void}){
     <div className="reader-article">
      {paragraphs.length?paragraphs.map((p,i)=><p key={i}>{p}</p>):<p>La fuente no proporcionó un resumen verificable adicional al titular.</p>}
     </div>
-    <div className="reader-disclosure">Este texto recoge únicamente el resumen disponible en la fuente. Cuando la noticia requiera más detalle que el publicado en el canal de noticias, se indicará sin agregar datos no verificados.</div>
+    <section className="reader-facts"><h2>Lo que necesitás saber</h2>
+    {detailsLoading?<div className="reader-loading"><RefreshCw className="spin" size={17}/> Buscando detalles verificados del medio...</div>:
+    facts.length?facts.map((f,i)=><div className="reader-qa" key={i}><h3>{f.question}</h3><p>{f.answer}</p></div>):
+    <p className="reader-no-detail">{detailNote||"La fuente no aporta más información comprobable que el resumen mostrado."}</p>}
+    </section>
+    <div className="reader-disclosure">Resumen y preguntas elaboradas únicamente con información disponible en la fuente indicada. No se completan datos que el medio no haya publicado.</div>
     <div className="reader-actions"><button type="button" onClick={onClose}>Volver a noticias</button><a href={item.url} target="_blank" rel="noopener noreferrer">Fuente original <ArrowUpRight size={17}/></a></div>
    </div>
   </section>
@@ -69,8 +84,10 @@ function ArticleReader({item,onClose}:{item:Article;onClose:()=>void}){
 function Crest({url,name,compact=false}:{url:string|null;name:string;compact?:boolean}){
  const [attempt,setAttempt]=useState(0);
  useEffect(()=>setAttempt(0),[url]);
- const valid=safe(url);
- const proxy=valid&&new URL(valid).hostname==="a.espncdn.com"?"/api/escudo?src="+encodeURIComponent(valid):valid;
+ const talleres=/^talleres(?: \(c[oó]rdoba\)| cba)?$/i.test(name.trim())||/talleres de c[oó]rdoba/i.test(name);
+ const official=talleres?"https://www.clubtalleres.com.ar/wp-content/uploads/2025/03/escudo-2-estrellas-x2-251x300.png":url;
+ const valid=safe(official);
+ const proxy=valid&&["a.espncdn.com","www.clubtalleres.com.ar"].includes(new URL(valid).hostname)?"/api/escudo?src="+encodeURIComponent(valid):valid;
  const shown=attempt===0?proxy:attempt===1?valid:null;
  const initials=name.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
  return <span className={"crest-wrap"+(compact?" crest-small":"")} title={"Escudo de "+name}>
@@ -89,12 +106,28 @@ const displayTeam=(s:string)=>{
  const names:Record<string,string>={"Germany":"Alemania","Netherlands":"Países Bajos","Switzerland":"Suiza","Scotland":"Escocia","Spain":"España","England":"Inglaterra","France":"Francia","Belgium":"Bélgica","Italy":"Italia","Brazil":"Brasil","Croatia":"Croacia","Japan":"Japón","Norway":"Noruega","Morocco":"Marruecos","United States":"Estados Unidos","Mexico":"México","Türkiye":"Turquía","Czechia":"Chequia","Denmark":"Dinamarca","Portugal":"Portugal","Uruguay":"Uruguay"};
  return names[s]||s;
 };
+
+function BroadcastInfo({game,compact=false}:{game:Game;compact?:boolean}){
+ const casts=game.broadcasts||[];
+ return <div className={"broadcast-info"+(compact?" broadcast-compact":"")}>
+  {casts.length?<><span className="broadcast-label">DÓNDE VER · ARGENTINA</span>{casts.map(ch=><a className="broadcast-channel" key={ch.name} href={ch.url} target="_blank" rel="noopener noreferrer" title={"Ver información de "+ch.name}><img src={ch.logo} alt="" loading="lazy" onError={e=>e.currentTarget.style.display="none"}/><b>{ch.name}</b><ArrowUpRight size={12}/></a>)}</>:
+  <span className="broadcast-unconfirmed">TV / streaming: por confirmar en Argentina</span>}
+ </div>;
+}
+function ClockInfo({m}:{m:Game}){
+ const live=["1H","2H","HT","ET","BT","P","LIVE","INT"].includes(m.status);
+ if(!live)return <>{["FT","AET","PEN"].includes(m.status)?"FINAL":m.status==="NS"?timeText(m.date):m.status}</>;
+ const clock=(m.clock||"").trim();
+ // Never synthesize a timer. If provider doesn't send seconds, report verified minute only.
+ const display=/^\d{1,3}:\d{2}$/.test(clock)?clock:/^\d{1,3}'(?:\+\d+')?$/.test(clock)?clock:m.elapsed!=null?m.elapsed+"'":null;
+ return <>{display?display+" · ":""}EN VIVO</>;
+}
 function Score({m}:{m:Game}){const live=["1H","2H","HT","ET","BT","P","LIVE","INT"].includes(m.status);const done=["FT","AET","PEN"].includes(m.status);return <article className="match">
- <div className="match-top"><span>{m.round||m.league}</span><span className={live?"live-label":""}>{live?(m.elapsed==null?"EN VIVO":m.elapsed+"' EN VIVO"):done?"FINAL":m.status==="NS"?timeText(m.date):m.status}</span></div>
+ <div className="match-top"><span>{m.round||m.league}</span><span className={live?"live-label":""}><ClockInfo m={m}/></span></div>
  <div className="match-center"><div className="team"><Crest url={m.homeLogo} name={m.home}/><strong>{displayTeam(m.home)}</strong></div><div className="score"><strong>{m.homeScore==null?"VS":m.homeScore+" – "+(m.awayScore??"–")}</strong><small>{live?"En juego":done?"Finalizado":timeText(m.date)}</small></div><div className="team"><Crest url={m.awayLogo} name={m.away}/><strong>{displayTeam(m.away)}</strong></div></div>
  {(m.venue||m.referee)&&<div className="match-foot">{m.venue}{m.referee?" · Árbitro: "+m.referee:""}</div>}
+ <BroadcastInfo game={m}/>
  </article>}
-
 type BracketData={connected:boolean;league?:string;rounds:{name:string;matches:Game[]}[];source:string;sourceName:string;message?:string};
 function PlayoffPanel({data,league}:{data:BracketData|null;league:string}){
  if(!data)return <div className="empty"><RefreshCw className="spin"/> Consultando cruces oficiales...</div>;
@@ -106,26 +139,36 @@ function PlayoffPanel({data,league}:{data:BracketData|null;league:string}){
  </div>;
 }
 
-function Sports({lcf,femaleLocal,onRead}:{lcf:Article|null;femaleLocal:Article|null;onRead:(item:Article)=>void}){const [gender,setGender]=useState<"Masculino"|"Femenino">("Masculino"),[league,setLeague]=useState("arg"),[mode,setMode]=useState<"matches"|"standings"|"playoffs">("matches"),[offset,setOffset]=useState(0);
+
+function qualifier(league:string,team:{rank:number;group?:string},total:number):{name:string;type:string}|null{
+ if(league==="arg"&&team.rank<=8)return {name:"Clasifica a octavos",type:"qualified"};
+ if(league==="nacional"&&team.rank===1)return {name:"Líder de zona",type:"leader"};
+ if(league==="proyeccion"&&team.rank<=4)return {name:"Clasifica a cuartos",type:"qualified"};
+ if(league==="arg-fem"&&team.rank===1)return {name:"Líder",type:"leader"};
+ if(["premier","laliga","seriea","bundesliga"].includes(league)&&team.rank<=4)return {name:"Clasificación europea",type:"qualified"};
+ if(["premier","laliga","seriea"].includes(league)&&total>=18&&team.rank>total-3)return {name:"Zona de descenso",type:"danger"};
+ return null;
+}
+function Sports({lcf,femaleLocal,onRead}:{lcf:Article|null;femaleLocal:Article|null;onRead:(item:Article)=>void}){const [gender,setGender]=useState<"Masculino"|"Femenino">("Masculino"),[league,setLeague]=useState("todos"),[mode,setMode]=useState<"matches"|"standings"|"playoffs">("matches"),[offset,setOffset]=useState(0);
  const [result,setResult]=useState<SportsData|null>(null),[bracket,setBracket]=useState<BracketData|null>(null),[busy,setBusy]=useState(false);
- const leagues=LEAGUES.filter(l=>gender==="Femenino"?l.group==="Femenino":l.group!=="Femenino");
+ const leagues=LEAGUES.filter(l=>l.code==="todos"||(gender==="Femenino"?l.group==="Femenino":l.group!=="Femenino"));
  const load=useCallback(async()=>{setBusy(true);try{
  if(mode==="playoffs"){const r=await fetch("/api/playoffs?league="+encodeURIComponent(league),{cache:"no-store"});const j=await r.json();setBracket(j);return}
- const q=new URLSearchParams({league,date:shiftDay(offset),mode});
+ const q=new URLSearchParams({league,date:shiftDay(offset),mode,gender});
  const r=await fetch("/api/football?"+q,{cache:"no-store"});const j=await r.json();setResult(j)
- }catch{if(mode==="playoffs")setBracket({connected:false,rounds:[],message:"No fue posible consultar los playoffs.",source:"",sourceName:""});else setResult({connected:false,updatedAt:new Date().toISOString(),error:"No fue posible consultar resultados en este momento."})}finally{setBusy(false)}},[league,offset,mode]);
- useEffect(()=>{void load();const t=setInterval(()=>void load(),60000);return()=>clearInterval(t)},[load]);
+ }catch{if(mode==="playoffs")setBracket({connected:false,rounds:[],message:"No fue posible consultar los playoffs.",source:"",sourceName:""});else setResult({connected:false,updatedAt:new Date().toISOString(),error:"No fue posible consultar resultados en este momento."})}finally{setBusy(false)}},[league,offset,mode,gender]);
+ useEffect(()=>{void load();const t=setInterval(()=>void load(),20000);return()=>clearInterval(t)},[load]);
  return <section><div className="section-head"><span className="eyebrow"><Activity size={16}/> CENTRO DEPORTIVO</span><h1>Todos los partidos. <em>Un solo lugar.</em></h1><p>Argentina, Europa y fútbol femenino, con estadísticas y fuentes deportivas conectadas.</p></div>
- <div className="gender-switch"><button className={gender==="Masculino"?"chosen":""} onClick={()=>{setGender("Masculino");setLeague("arg");setMode("matches")}}>Masculino</button><button className={gender==="Femenino"?"chosen":""} onClick={()=>{setGender("Femenino");setLeague("arg-fem");setMode("matches")}}>Femenino</button></div>
- <div className="league-menu">{leagues.map(l=><button key={l.code} className={l.code===league?"selected":""} onClick={()=>{setLeague(l.code);if(l.code==="selecciones"||mode==="playoffs"&&l.code!=="arg"&&l.code!=="nacional")setMode("matches")}}>{l.name}</button>)}</div>
+ <div className="gender-switch"><button className={gender==="Masculino"?"chosen":""} onClick={()=>{setGender("Masculino");setLeague("todos");setMode("matches")}}>Masculino</button><button className={gender==="Femenino"?"chosen":""} onClick={()=>{setGender("Femenino");setLeague("todos");setMode("matches")}}>Femenino</button></div>
+ <div className="league-menu">{leagues.map(l=><button key={l.code} className={l.code===league?"selected":""} onClick={()=>{setLeague(l.code);if(l.code==="selecciones"||l.code==="todos"||mode==="playoffs"&&l.code!=="arg"&&l.code!=="nacional")setMode("matches")}}>{l.name}</button>)}</div>
  {league==="selecciones"&&<div className="ranking-note"><Globe size={19}/> Solo partidos donde participa al menos una selección del top 20 FIFA masculino, según el ranking oficial del 7 de octubre de 2026. <a href="https://inside.fifa.com/fifa-rankings/world-ranking/men" target="_blank" rel="noopener noreferrer">Ranking oficial ↗</a></div>}
- <div className="sports-toolbar"><div className="mode-buttons"><button className={mode==="matches"?"chosen":""} onClick={()=>setMode("matches")}>Partidos</button><button className={mode==="standings"?"chosen":""} disabled={league==="selecciones"} onClick={()=>setMode("standings")}>Estadísticas</button>{gender==="Masculino"&&(league==="arg"||league==="nacional")&&<button className={mode==="playoffs"?"chosen":""} onClick={()=>setMode("playoffs")}>Playoffs</button>}</div><button className="refresh" onClick={()=>void load()}><RefreshCw size={16} className={busy?"spin":""}/> Actualizar</button></div>
+ <div className="sports-toolbar"><div className="mode-buttons"><button className={mode==="matches"?"chosen":""} onClick={()=>setMode("matches")}>Partidos</button><button className={mode==="standings"?"chosen":""} disabled={league==="selecciones"||league==="todos"||league==="trofeo"||league==="supercopa-int"} onClick={()=>setMode("standings")}>Estadísticas</button>{gender==="Masculino"&&(league==="arg"||league==="nacional")&&<button className={mode==="playoffs"?"chosen":""} onClick={()=>setMode("playoffs")}>Playoffs</button>}</div><button className="refresh" onClick={()=>void load()}><RefreshCw size={16} className={busy?"spin":""}/> Actualizar</button></div>
  {mode==="matches"&&<div className="date-strip">{[-2,-1,0,1,2,3,4].map(n=><button key={n} className={n===offset?"selected":""} onClick={()=>setOffset(n)}><small>{n===0?"HOY":new Intl.DateTimeFormat("es-AR",{weekday:"short",timeZone:"UTC"}).format(new Date(shiftDay(n)+"T12:00:00Z"))}</small><b>{shiftDay(n).slice(8)}</b></button>)}</div>}
  {mode!=="playoffs"&&!result&&<div className="empty"><RefreshCw className="spin"/> Buscando partidos reales...</div>}
  {mode!=="playoffs"&&result&&!result.connected&&<div className="empty"><WifiOff size={34}/><h3>Datos de la competición no disponibles</h3><p>{result.error}</p><small>La app nunca completa la grilla con resultados ficticios.</small></div>}
- {result?.connected&&mode==="matches"&&<><div className="content-caption">{result.matches?.length||0} partidos · {shiftDay(offset)} · {result.league}</div><div className="match-grid">{result.matches?.length?result.matches.map(m=><Score key={m.id} m={m}/>):<div className="empty">No hay partidos programados en esta competición para esa fecha.</div>}</div></>}
+ {result?.connected&&mode==="matches"&&<><div className="content-caption">{result.matches?.length||0} partidos · {shiftDay(offset)} · {result.league}</div>{result.message&&<p className="fixture-note">{result.message}</p>}<div className="match-grid">{result.matches?.length?result.matches.map(m=><Score key={m.id+"-"+m.league} m={m}/>):<div className="empty">No hay partidos confirmados en esta competición para esa fecha.{result.sourceUrl&&<a target="_blank" rel="noopener noreferrer" href={result.sourceUrl}>Consultar calendario oficial ↗</a>}</div>}</div></>}
  {mode==="playoffs"&&<PlayoffPanel data={bracket} league={league}/>}
- {result?.connected&&mode==="standings"&&<><div className="table-panel"><h3>Tabla de posiciones · {result.league}</h3>{result.standings?.length?<><div className="table-scroll"><table><thead><tr><th>#</th><th>Equipo</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>DG</th><th>Pts</th></tr></thead><tbody>{result.standings.map((s,i)=><tr key={s.team+i}><td>{s.rank}</td><td className="standing-team"><Crest url={s.logo} name={s.team} compact/>{s.team}{s.group&&<small>{s.group}</small>}</td><td>{s.played}</td><td>{s.won}</td><td>{s.drawn}</td><td>{s.lost}</td><td>{s.gd}</td><td><strong>{s.points}</strong></td></tr>)}</tbody></table></div><div className="standings-mobile">{result.standings.map((s,i)=><div className="standing-mobile-card" key={s.team+i}><div className="mobile-standing-top"><span className="mobile-standing-rank">{s.rank}</span><Crest url={s.logo} name={s.team} compact/><div className="mobile-standing-name"><strong>{s.team}</strong>{s.group&&<small>{s.group.replace("Group","Zona")}</small>}</div><span className="mobile-standing-points"><strong>{s.points}</strong><small>PTS</small></span></div><div className="mobile-standing-stats">{[{label:"PJ",value:s.played},{label:"G",value:s.won},{label:"E",value:s.drawn},{label:"P",value:s.lost},{label:"DG",value:s.gd}].map(stat=><span key={stat.label}><small>{stat.label}</small><b>{stat.value}</b></span>)}</div></div>)}</div></>:<div className="empty">El proveedor no publica una tabla para esta competición.</div>}{result.error&&<p className="table-warning">{result.error}</p>}</div>
+ {result?.connected&&mode==="standings"&&<><div className="table-panel"><h3>Tabla de posiciones · {result.league}</h3><div className="qualification-legend"><span className="legend-qualified">Clasificación / copas</span><span className="legend-leader">Líder de tabla</span><span className="legend-danger">Zona de descenso (donde corresponde)</span></div>{result.standings?.length?<><div className="table-scroll"><table><thead><tr><th>#</th><th>Equipo</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>DG</th><th>Pts</th></tr></thead><tbody>{result.standings.map((s,i)=><tr key={s.team+i} className={qualifier(league,s,result.standings?.length||0)?.type||""}><td><span className="table-position">{s.rank}</span></td><td className="standing-team"><Crest url={s.logo} name={s.team} compact/>{s.team}{s.group&&<small>{s.group}</small>}</td><td>{s.played}</td><td>{s.won}</td><td>{s.drawn}</td><td>{s.lost}</td><td>{s.gd}</td><td><strong>{s.points}</strong></td></tr>)}</tbody></table></div><div className="standings-mobile">{result.standings.map((s,i)=><div className={"standing-mobile-card "+(qualifier(league,s,result.standings?.length||0)?.type||"")} key={s.team+i}><div className="mobile-standing-top"><span className="mobile-standing-rank">{s.rank}</span><Crest url={s.logo} name={s.team} compact/><div className="mobile-standing-name"><strong>{s.team}</strong>{s.group&&<small>{s.group.replace("Group","Zona")}</small>}{qualifier(league,s,result.standings?.length||0)&&<small className="qualifier-inline">{qualifier(league,s,result.standings?.length||0)?.name}</small>}</div><span className="mobile-standing-points"><strong>{s.points}</strong><small>PTS</small></span></div><div className="mobile-standing-stats">{[{label:"PJ",value:s.played},{label:"G",value:s.won},{label:"E",value:s.drawn},{label:"P",value:s.lost},{label:"DG",value:s.gd}].map(stat=><span key={stat.label}><small>{stat.label}</small><b>{stat.value}</b></span>)}</div></div>)}</div></>:<div className="empty">El proveedor no publica una tabla para esta competición.</div>}{result.error&&<p className="table-warning">{result.error}</p>}</div>
  <div className="leaders-grid">{[{name:"Goleadores",list:result.scorers},{name:"Asistencias",list:result.assisters}].map(box=><div className="table-panel" key={box.name}><h3>{box.name} · Top 3</h3>{box.list?.length?box.list.map((p,i)=><div className="leader" key={i}><strong>{i+1}</strong><span><b>{p.name}</b><small>{p.team}</small></span><b>{p.value??"—"}</b></div>):<p>Sin datos disponibles para este ranking.</p>}</div>)}</div></>}
  <div className="lcf-feature"><div className="lcf-header"><span>{gender==="Femenino"?"FÚTBOL FEMENINO CORDOBÉS · ACTUALIDAD":"LIGA CORDOBESA DE FÚTBOL · ACTUALIDAD"}</span><p>Primera A, Primera B y fútbol femenino. Noticias locales verificadas, sin tablas simuladas.</p></div>{(gender==="Femenino"?femaleLocal||lcf:lcf)?<NewsCard item={(gender==="Femenino"?femaleLocal||lcf:lcf)!} onRead={onRead}/>:<p className="lcf-empty">No encontramos una publicación local reciente que podamos verificar.</p>}</div>
  <div className="source-line"><Info size={16}/> Resultados y escudos de ESPN para las competiciones cubiertas; Primera A femenina, de Calcio24 con calendario contrastado con AFA. Son fuentes públicas sin garantía de continuidad. La pantalla consulta cada 60 segundos y no inventa minutos ni marcadores.</div></section>}
@@ -139,7 +182,7 @@ function HomeLivePanel({games,updatedAt,onSports}:{games:Game[];updatedAt:string
  const finished=games.filter(m=>["FT","AET","PEN"].includes(m.status)).sort((a,b)=>b.date.localeCompare(a.date));
  const chosen=(live.length?live:future.length?future:finished).slice(0,4);
  return <section className="home-live"><div className="home-live-header"><div><span className="live-dot"/><strong>{live.length?"PARTIDOS EN VIVO":future.length?"PRÓXIMOS PARTIDOS":"RESULTADOS DE HOY"}</strong></div><button onClick={onSports}>Todos los partidos <ArrowRight size={16}/></button></div>
- {chosen.length?<div className="home-live-list">{chosen.map(m=><div className="home-live-match" key={m.id+"-"+m.league}><div className="home-live-league">{m.league}</div><div className="home-live-teams"><div><Crest url={m.homeLogo} name={m.home} compact/><span>{displayTeam(m.home)}</span></div><b>{m.homeScore==null||m.awayScore==null?"vs":m.homeScore+" - "+m.awayScore}</b><div><Crest url={m.awayLogo} name={m.away} compact/><span>{displayTeam(m.away)}</span></div></div><small>{LIVE_STATES.includes(m.status)?"EN JUEGO":m.status==="FT"?"FINAL":timeText(m.date)}</small></div>)}</div>:<div className="home-no-live"><Activity size={26}/><b>Sin partidos confirmados en vivo en este momento.</b><small>Consultá el calendario completo en Deportes.</small></div>}
+ {chosen.length?<div className="home-live-list">{chosen.map(m=><div className="home-live-match" key={m.id+"-"+m.league}><div className="home-live-league">{m.league}</div><div className="home-live-teams"><div><Crest url={m.homeLogo} name={m.home} compact/><span>{displayTeam(m.home)}</span></div><b>{m.homeScore==null||m.awayScore==null?"vs":m.homeScore+" - "+m.awayScore}</b><div><Crest url={m.awayLogo} name={m.away} compact/><span>{displayTeam(m.away)}</span></div></div><small>{LIVE_STATES.includes(m.status)?<ClockInfo m={m}/>:m.status==="FT"?"FINAL":timeText(m.date)}</small></div>)}</div>:<div className="home-no-live"><Activity size={26}/><b>Sin partidos confirmados en vivo en este momento.</b><small>Consultá el calendario completo en Deportes.</small></div>}
  <div className="home-live-footer"><span>Datos sujetos a la actualización de cada fuente</span><button onClick={onSports}>Ir a Deportes <ChevronRight size={16}/></button></div>
  </section>;
 }
