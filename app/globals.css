@@ -190,3 +190,89 @@ button.headline-card{text-align:left;color:inherit;width:100%;font:inherit}
  .lcf-feature .article-image,.lcf-feature .no-image{height:180px}
  .crest-wrap{width:58px;height:58px}
 }
+
+
+/* No empty photo slot: text-only stories are designed as compact editorials. */
+.article-no-photo .article-copy{padding:25px 22px;min-height:195px}
+.article-no-photo .article-title{font-size:21px;line-height:1.3}
+.article-no-photo .article-meta{padding-bottom:7px;border-bottom:1px solid var(--line)}
+.article-no-photo .article-copy p{color:#c8d5da}
+.home-dashboard{display:grid;grid-template-columns:minmax(265px,.9fr) minmax(0,1.5fr);gap:18px;margin:-12px 0 35px;align-items:stretch}
+.home-dashboard-weather{min-width:0}.home-dashboard-weather .weather-panel{height:calc(100% - 48px)}
+.home-live{background:linear-gradient(145deg,#192b38,#111e29);border:1px solid var(--line);border-radius:22px;padding:20px;min-width:0;display:flex;flex-direction:column}
+.home-live-header,.home-live-header>div,.home-live-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.home-live-header strong{font-size:12px;letter-spacing:.75px}
+.home-live-header>div{justify-content:start}
+.home-live-header button,.home-live-footer button{background:none;border:0;display:flex;align-items:center;gap:6px;color:var(--acid);font-size:11px;font-weight:750}
+.home-live-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.home-live-match{background:#ffffff06;border:1px solid #344451;border-radius:13px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.home-live-match .crest-wrap{width:27px;height:27px;padding:2px}
+.home-live-league{color:var(--acid);font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-live-teams{display:grid;grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr);align-items:center;gap:3px}
+.home-live-teams>div{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;text-align:center}
+.home-live-teams>div span:last-child{font-size:11px;font-weight:750;line-height:1.2;overflow-wrap:anywhere}
+.home-live-teams>b{text-align:center;font-size:15px;white-space:nowrap}
+.home-live-match>small{text-align:center;color:var(--muted);font-size:10px}
+.home-no-live{display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;text-align:center;flex:1;padding:15px;color:var(--muted)}
+.home-no-live b{font-size:13px;color:var(--text)}.home-no-live small{font-size:11px}
+.home-live-footer{margin-top:auto;border-top:1px solid #344451;padding-top:12px;font-size:10px;color:var(--muted)}
+.table-warning{font-size:12px;margin-top:12px}
+.standings-mobile{display:none}
+.playoff-root{border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:23px;margin:22px 0}
+.playoff-heading{display:flex;align-items:end;justify-content:space-between;gap:12px}
+.playoff-heading span{font-size:10px;color:var(--acid);font-weight:800;letter-spacing:1px}
+.playoff-heading h2{font-size:29px;margin-top:4px}
+.playoff-heading a{color:var(--acid);font-size:11px;display:flex;align-items:center;gap:4px}
+.playoff-intro{margin:12px 0 21px;font-size:12px;color:var(--muted)}
+.playoff-stages{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.playoff-stage{min-width:0}
+.playoff-round-title{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:12px 0}
+.playoff-round-title svg{color:var(--acid)}
+.playoff-round-title h3{font-size:16px;flex:1}.playoff-round-title span{color:var(--muted);font-size:10px}
+.playoff-games{display:grid;grid-template-columns:1fr;gap:9px;margin-top:12px}
+.playoff-game{border:1px solid #42515d;border-radius:13px;padding:13px;background:#ffffff06}
+.playoff-game-top{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;margin-bottom:11px}
+.playoff-game-top span:last-child{font-weight:800;color:var(--acid)}
+.playoff-clubs{display:flex;flex-direction:column;gap:10px}
+.playoff-clubs>div{display:flex;align-items:center;gap:10px;min-width:0}
+.playoff-clubs>div>span:nth-child(2){flex:1;font-size:12px;font-weight:720;min-width:0}
+.playoff-clubs>div>b{margin-left:auto;font-size:18px}
+.playoff-pending{padding:23px 10px;color:var(--muted);font-size:12px;text-align:center;border:1px dashed #42515d;border-radius:11px;margin-top:12px}
+@media(max-width:1050px){.home-dashboard{grid-template-columns:1fr 1fr}.home-live-list{grid-template-columns:1fr}}
+@media(max-width:760px){
+ .home-dashboard{grid-template-columns:1fr;gap:12px;margin:0 0 25px}
+ .home-dashboard-weather .weather-panel{height:auto}
+ .home-dashboard-weather .aside-btn{padding:10px 4px}
+ .home-live-list{grid-template-columns:1fr 1fr}
+ .home-live-match{padding:8px}
+ .home-live-teams{grid-template-columns:minmax(0,1fr) 31px minmax(0,1fr)}
+ .home-live-teams>div span:last-child{font-size:10px}
+ .home-live-match .crest-wrap{width:24px;height:24px}
+ .home-intro{margin-top:14px}
+ .table-scroll{display:none}
+ .standings-mobile{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+ .standing-mobile-card{border:1px solid #354554;background:#ffffff05;border-radius:13px;padding:12px;min-width:0}
+ .mobile-standing-top{display:flex;align-items:center;gap:8px;min-width:0}
+ .mobile-standing-rank{color:var(--acid);width:19px;flex:none;text-align:center;font-weight:800;font-size:13px}
+ .mobile-standing-name{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+ .mobile-standing-name strong{font-size:13px;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
+ .mobile-standing-name small{font-size:10px;color:var(--muted)}
+ .mobile-standing-points{display:flex;flex-direction:column;align-items:center;min-width:38px}
+ .mobile-standing-points strong{font-size:21px;color:var(--acid);line-height:1}
+ .mobile-standing-points small{font-size:9px;color:var(--muted)}
+ .mobile-standing-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid #344452;margin-top:10px;padding-top:8px}
+ .mobile-standing-stats>span{display:flex;align-items:center;flex-direction:column;gap:2px}
+ .mobile-standing-stats small{font-size:9px;color:var(--muted)}
+ .mobile-standing-stats b{font-size:13px}
+ .table-panel{padding:13px}
+ .table-panel h3{font-size:19px}
+ .playoff-root{padding:12px}
+ .playoff-stages{grid-template-columns:1fr}
+ .playoff-heading{align-items:start;flex-direction:column}
+ .playoff-heading h2{font-size:25px}
+ .mode-buttons{max-width:100%;min-width:0}
+ .mode-buttons button{padding:10px 11px;font-size:12px}
+}
+@media(max-width:390px){
+ .home-live-list{grid-template-columns:1fr}
+}
