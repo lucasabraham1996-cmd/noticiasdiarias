@@ -21,3 +21,11 @@ npm run dev
 ```
 
 Configurar `API_FOOTBALL_KEY` en Vercel para activar resultados en vivo. Esta clave nunca debe ir en el frontend.
+
+## Despliegue
+
+- **Sitio publicado:** https://noticiasdiarias-theta.vercel.app
+- **Origen:** GitHub, rama `main`, vinculado al proyecto Vercel `noticiasdiarias`.
+- Los cambios enviados a `main` se despliegan automáticamente a través de la integración Git de Vercel.
+- **Datos deportivos en vivo:** pendientes de configurar `API_FOOTBALL_KEY` como variable de entorno del proyecto; sin esa clave no se muestran resultados ni estadísticas.
+- **Ediciones ChatGPT:** se debe conectar un publicador que actualice `content/editions.json`; las ediciones conversacionales todavía no se transfieren solas.
