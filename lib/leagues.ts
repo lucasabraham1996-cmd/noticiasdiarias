@@ -13,7 +13,9 @@ export const LEAGUES:League[]=[
 {code:"esp-fem",name:"Liga F",country:"España",group:"Femenino",id:null,season:"europe"},
 {code:"ita-fem",name:"Serie A femenina",country:"Italia",group:"Femenino",id:null,season:"europe"},
 {code:"ger-fem",name:"Frauen-Bundesliga",country:"Alemania",group:"Femenino",id:null,season:"europe"},
-{code:"fra-fem",name:"Première Ligue",country:"Francia",group:"Femenino",id:null,season:"europe"}];
+{code:"fra-fem",name:"Première Ligue",country:"Francia",group:"Femenino",id:null,season:"europe"},
+{code:"nws-fem",name:"NWSL (Estados Unidos)",country:"Estados Unidos",group:"Femenino",id:null,season:"calendar"},
+{code:"uefa-fem",name:"Champions femenina",country:"Europa",group:"Femenino",id:null,season:"europe"}];
 export function leagueInfo(code:string){return LEAGUES.find(l=>l.code===code)||LEAGUES[0]}
 export function leagueId(code:string):number|null {let overrides:Record<string,number>={};try{overrides=JSON.parse(process.env.FOOTBALL_LEAGUE_IDS||"{}")}catch{};return overrides[code]||leagueInfo(code).id}
 export function seasonOf(code:string,date:string){const d=new Date(date+"T12:00:00Z");const y=d.getUTCFullYear();return leagueInfo(code).season==="calendar"?y:(d.getUTCMonth()<6?y-1:y)}
