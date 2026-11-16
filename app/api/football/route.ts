@@ -29,6 +29,7 @@ export async function GET(req:NextRequest){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return NextResponse.json({error:"Fecha inválida"},{status:400});
  const now=new Date().toISOString();
  if(!process.env.API_FOOTBALL_KEY)return NextResponse.json({connected:false,error:"Resultados y estadísticas se activarán al configurar la API deportiva. No mostramos marcadores inventados.",updatedAt:now});
+ if(process.env.API_FOOTBALL_FREE_PLAN==="true")return NextResponse.json({connected:false,error:"El plan gratuito de API-Football no habilita la temporada actual (2026). Pausamos las consultas para conservar la cuota diaria; los marcadores volverán a funcionar al activar un plan con cobertura actual.",updatedAt:now});
  try{
  let id=leagueId(code);
  if(!id) return NextResponse.json({connected:false,error:"Para "+info.name+" hay que verificar el ID y cobertura del torneo femenino en la API.",updatedAt:now});
