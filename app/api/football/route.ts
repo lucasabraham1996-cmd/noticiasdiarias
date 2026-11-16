@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { leagueInfo, seasonOf } from "@/lib/leagues";
+import { womenArgMatches, womenArgStandings } from "@/lib/women-arg";
 import type { Game, Standing, Player, SportsData } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -173,6 +174,7 @@ export async function GET(req: NextRequest) {
   if (!Object.prototype.hasOwnProperty.call(ESPN, code) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date + "T12:00:00Z"))) {
     return NextResponse.json({ connected: false, updatedAt: now, error: "Competición o fecha inválida." }, { status: 400 });
   }
+  if (code === "arg-fem") return NextResponse.json(mode === "standings" ? await womenArgStandings() : await womenArgMatches(date), {headers:{"Cache-Control":"public, s-maxage=60, stale-while-revalidate=60"}});
   if (code === "selecciones") {
     if(mode === "standings") return NextResponse.json({connected:true,league:info.name,updatedAt:now,standings:[],scorers:[],assisters:[],error:"Las selecciones se presentan con partidos destacados del top 20 FIFA. Ranking masculino al 7/10/2026."});
     try {
