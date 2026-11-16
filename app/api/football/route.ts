@@ -87,7 +87,7 @@ function games(json: JsonRecord, leagueName: string): Game[] {
     const state = matchStatus(c);
     const clock=String(c?.status?.displayClock||event?.status?.displayClock||"").trim();
     const localCast=(c?.geoBroadcasts||[]).filter((b:any)=>String(b?.region||"").toLowerCase()==="ar").map((b:any)=>String(b?.media?.shortName||"")).filter(Boolean);
-    const broadcasts=[...new Set(localCast)].map(n=>channel(n)).filter((x):x is NonNullable<ReturnType<typeof channel>>=>!!x);
+    const broadcasts=[...new Set(localCast)].map(n=>channel(String(n))).filter((x):x is NonNullable<ReturnType<typeof channel>>=>!!x);
     const started = state.status !== "NS" && state.status !== "PST" && state.status !== "CANC";
     found.push({
       id,
