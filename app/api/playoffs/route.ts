@@ -92,6 +92,6 @@ export async function GET(req:NextRequest){
  const games=[...new Map(records.flatMap(x=>x.status==="fulfilled"?x.value:[]).map(x=>[x.id,x])).values()];
  const byRound=new Map<string,Game[]>();
  for(const g of games){const name=/quarter|cuarto/i.test(g.round||"")?"Cuartos de final":/semi/i.test(g.round||"")?"Semifinales":/final/i.test(g.round||"")?"Final":"Torneo Reducido";byRound.set(name,[...(byRound.get(name)||[]),g])}
- const rounds:Round[]=[...byRound.entries()].map(([name,matches])=>({name,matches:matches.sort((a,b)=>a.date.localeCompare(b.date))}));
+ const order=["Torneo Reducido","Cuartos de final","Semifinales","Final"];const rounds:Round[]=[...byRound.entries()].sort((a,b)=>order.indexOf(a[0])-order.indexOf(b[0])).map(([name,matches])=>({name,matches:matches.sort((a,b)=>a.date.localeCompare(b.date))}));
  return NextResponse.json({connected:records.some(x=>x.status==="fulfilled"),league:"Primera Nacional · Torneo Reducido",rounds,source:"https://www.espn.com.ar/futbol/liga/_/nombre/arg.2",sourceName:"ESPN",updatedAt:now.toISOString(),message:"Se muestran los encuentros que el proveedor publica para estas fechas. No se completan cruces futuros sin confirmar."},{headers:{"Cache-Control":"public, s-maxage=180, stale-while-revalidate=180"}});
 }

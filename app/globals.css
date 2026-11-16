@@ -276,3 +276,9 @@ button.headline-card{text-align:left;color:inherit;width:100%;font:inherit}
 @media(max-width:390px){
  .home-live-list{grid-template-columns:1fr}
 }
+
+/* If the lead story has no trustworthy photo, don't allocate a blank cover canvas. */
+.headline-no-cover{min-height:265px;background:linear-gradient(145deg,#273c34,#152735 78%);align-items:center}
+.headline-no-cover .headline-shadow{background:linear-gradient(90deg,#102018bf,#10201844)}
+.headline-no-cover .headline-body{padding:28px}
+@media(max-width:760px){.headline-no-cover{min-height:230px}.headline-no-cover .headline-body{padding:22px}}
