@@ -11,7 +11,6 @@ const feeds:Feed[]=[
  {source:"Fútbol de Córdoba",url:"https://futboldecordoba.com.ar/category/primera-a/feed/",category:"Deportes",scope:"local",lcf:true},
  {source:"Fútbol de Córdoba",url:"https://futboldecordoba.com.ar/category/primera-b/feed/",category:"Deportes",scope:"local",lcf:true},
  {source:"Fútbol de Córdoba",url:"https://futboldecordoba.com.ar/category/femenino/feed/",category:"Deportes",scope:"local",lcf:true},
- {source:"Google Noticias · Córdoba",url:"https://news.google.com/rss/search?q=C%C3%B3rdoba+Argentina+when%3A2d&hl=es-419&gl=AR&ceid=AR:es-419",category:"Córdoba",scope:"local"},
  {source:"La Nación",url:"https://www.lanacion.com.ar/arc/outboundfeeds/rss/",category:"Argentina",scope:"national"},
  {source:"Infobae",url:"https://www.infobae.com/arc/outboundfeeds/rss/",category:"Argentina",scope:"national"},
  {source:"Olé",url:"https://www.ole.com.ar/rss/ultimas-noticias/",category:"Deportes",scope:"national"}
@@ -32,7 +31,7 @@ const excerpt=(raw:string,max:number):string=>{
 const argentinaTopic=/milei|presidente|congreso|diputad|senado|anses|jubilad|inflaci|d[oó]lar|blue|econom[ií]a|mercado|inseguridad|elecci[oó]n|gobierno nacional|argentina|selecci[oó]n|boca|river|afa|copa argentina|talleres|belgrano|instituto|racing|pol[ií]tica nacional|justicia federal|juez federal/i;
 const cordobaTopic=/c[oó]rdoba|llaryora|passerini|r[ií]o cuarto|villa mar[ií]a|alta gracia|carlos paz|calamuchita|punilla|barrio|liga cordobesa|futbol de cordoba|talleres|belgrano|instituto|racing de c[oó]rdoba|nueva c[oó]rdoba|unc\b|universidad nacional de c[oó]rdoba/i;
 const lcfTopic=/liga cordobesa|primera [ab]\b|ascenso|clausura|all boys|rosedal|reservas?|inferiores?|femenino|fecha \d|torneo|clasificaci[oó]n|campe[oó]n|club|lcf/i;
-const strongNational=/milei|gobierno|congreso|inflaci[oó]n|d[oó]lar|anses|econom[ií]a|jubilad|salari|copa argentina|boca|river|afa|selecci[oó]n argentina|presidente|ley|justicia|reforma|paritarias|elecciones/i;
+const strongNational=/milei|caputo|bullrich|villarruel|kicillof|macri|congreso argentino|c[aá]mara de diputados|senado argentino|gobierno argentino|gobierno nacional|inflaci[oó]n argentina|d[oó]lar|anses|jubilad|salari|copa argentina|boca|river|afa|selecci[oó]n argentina|f[uú]tbol argentino|paritarias|elecciones nacionales|banco central|bcra|reforma laboral|justicia federal argentina|talleres|belgrano|instituto/i;
 function classify(s:string,fallback:Category,local:boolean):Category{
  if(/liga cordobesa|primera [ab]\b|all boys ros[e]?dal|f[uú]tbol femenino|selecci[oó]n|f[uú]tbol|talleres|belgrano|instituto|boca|river|gol |deport|racing de c[oó]rdoba/i.test(s))return "Deportes";
  if(/detenid|robo|crimen|polic[ií]a|fiscal[ií]a|asesinat|crimen|violencia|allanamiento|justicia penal/i.test(s))return "Policiales";
@@ -88,7 +87,8 @@ export async function GET(){
  const recent=unique.filter(x=>Date.now()-Date.parse(x.publishedAt)<4*86400_000&&Date.parse(x.publishedAt)<Date.now()+86400_000);
  const local=recent.filter(x=>x.scope==="local").sort(sort).slice(0,70);
  const national=recent.filter(x=>x.scope!=="local").sort(sort).slice(0,20);
- const lcf=local.filter(x=>x.isLcf).sort(sort).slice(0,12);
+ const lcfWeight=(a:Article)=>/ascenso|campe[oó]n|final|suspend|primera [ab]|liga cordobesa|torneo|reprogram|clasificaci[oó]n|fecha [0-9]/i.test(a.title)?5:0;
+ const lcf=local.filter(x=>x.isLcf).sort((a,b)=>lcfWeight(b)-lcfWeight(a)||Date.parse(b.publishedAt)-Date.parse(a.publishedAt)).slice(0,12);
  const items=[...local,...national].sort(sort);
  return NextResponse.json({items,localCount:local.length,nationalCount:national.length,lcf:lcf[0]||null,errors,updatedAt:new Date().toISOString()},{
   headers:{"Cache-Control":"public, s-maxage=300, stale-while-revalidate=300"}
