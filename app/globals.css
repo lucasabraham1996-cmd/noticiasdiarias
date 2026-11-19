@@ -333,3 +333,32 @@ tr.danger{background:#ab4a5814}
 .home-live-match .broadcast-compact .broadcast-channel{font-size:9px;padding:3px 5px;max-width:100%}
 .home-live-match .broadcast-compact .broadcast-channel img{height:14px;width:14px}
 .home-live-match .broadcast-compact .broadcast-unconfirmed{font-size:9px;text-align:center}
+
+/* 2026-11-18 · Identidad de cada liga en tarjetas y horario de granizo/lluvia */
+.match-league-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0 0 12px;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted)}
+.match-league-brand{display:inline-flex;align-items:center;gap:9px;min-width:0;color:var(--text);font-weight:800;font-size:12px}
+.match-league-brand img{width:29px;height:29px;object-fit:contain;flex:none}
+.match-league-brand svg{flex:none;color:var(--acid)}
+.match-league-brand b{overflow-wrap:anywhere}
+.home-live-league .match-league-brand{font-size:10px;color:var(--acid)}
+.home-live-league .match-league-brand img{width:21px;height:21px}
+.home-live-league{white-space:normal;overflow:visible}
+.weather-hour-title{font-weight:800;letter-spacing:.9px;font-size:10px;color:#d3e6ce;margin-top:17px}
+.weather-hour-scroll{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin:10px 0;padding-bottom:9px;scrollbar-width:thin}
+.weather-hour-mini{flex:0 0 81px;border:1px solid #49644e;background:#172c25;border-radius:12px;padding:10px 5px;display:flex;align-items:center;flex-direction:column;gap:5px;scroll-snap-align:start}
+.weather-hour-mini svg{width:18px;height:18px;color:#d1eaa5}
+.weather-hour-mini small{font-weight:750;color:#d9e9da}
+.weather-hour-mini strong{font-size:19px}
+.weather-hour-mini span{font-size:10px;color:#b6cbb7}
+.weather-hour-mini em{font-style:normal;font-size:9px;color:#bfd5c0;text-align:center}
+.weather-hour-mini.hail-indicated{border-color:#f1bb72}
+.weather-hour-mini.hail-indicated em{color:#ffd28d;font-weight:750}
+.weather-hail-note{display:flex;align-items:flex-start;gap:8px;font-size:11px;line-height:1.5;color:#c9dcc9;margin-top:14px}
+.weather-hail-note svg{flex:none;color:#ffcd7a}
+.weather-source-note{font-size:12px;color:var(--muted);margin-bottom:10px}
+.hour-row{flex-wrap:wrap;justify-content:space-between}
+.hour-row .hour-when{min-width:90px;font-variant-numeric:tabular-nums}
+.hour-row .hour-rain{display:flex;align-items:center;gap:4px;color:var(--text);white-space:nowrap}
+.hour-row .hour-hail{font-size:10px;color:var(--muted)}
+.hour-row .hour-hail.active{color:#e5ba67;font-weight:800}
+@media(max-width:760px){.weather-hour-mini{flex-basis:74px}.weather-panel{padding:16px}.hour-row .hour-when{min-width:70px}.hour-row .hour-hail{width:100%;padding-left:0}}
