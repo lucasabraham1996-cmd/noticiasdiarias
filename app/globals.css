@@ -370,3 +370,7 @@ tr.danger{background:#ab4a5814}
 .refresh-notice{padding:8px 24px;text-align:center;font-size:12px;background:#20392b;color:#d7eecf;border-bottom:1px solid #45624f}
 @media(max-width:760px){.header-inner{gap:10px}.global-update{padding:10px 12px;margin-left:auto}.menu-button{margin-left:0}.global-update span{font-size:11px}.brand{gap:8px}.brand strong{font-size:13px}.brand small{font-size:7px}}
 @media(max-width:375px){.global-update{padding:10px 8px}.global-update span{display:none}}
+
+.playoff-league{display:flex;align-items:center;padding-bottom:8px;margin-bottom:7px;border-bottom:1px solid var(--line)}
+.playoff-league .match-league-brand{font-size:11px}
+.playoff-league .match-league-brand img{width:24px;height:24px}
