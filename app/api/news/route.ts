@@ -1,7 +1,7 @@
-import {NextResponse} from "next/server";
+import {NextRequest,NextResponse} from "next/server";
 import Parser from "rss-parser";
 import type {Article,Category} from "@/lib/types";
-export const revalidate=300;
+export const dynamic="force-dynamic";
 
 type Feed={source:string;url:string;category:Category;scope:"local"|"national";lcf?:boolean};
 const feeds:Feed[]=[
@@ -56,7 +56,8 @@ function origin(n:any,feed:Feed):{name:string,domain:string}{
  return {name:String(name).slice(0,70),domain};
 }
 const norm=(s:string)=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
-export async function GET(){
+export async function GET(req:NextRequest){
+ const fresh=req.nextUrl.searchParams.has("refresh");
  const response=await Promise.allSettled(feeds.map(async f=>{
   const result=await parser.parseURL(f.url);
   const articles:Article[]=[];
@@ -84,13 +85,13 @@ export async function GET(){
  response.forEach((r,i)=>{if(r.status==="fulfilled")merged.push(...r.value);else errors.push("No respondió "+feeds[i].source)});
  const unique=[...new Map(merged.sort((a,b)=>(a.isLcf?0:1)-(b.isLcf?0:1)).map(x=>[norm(x.title),x])).values()];
  const sort=(a:Article,b:Article)=>Date.parse(b.publishedAt)-Date.parse(a.publishedAt);
- const recent=unique.filter(x=>Date.now()-Date.parse(x.publishedAt)<(x.isLcf?7:4)*86400_000&&Date.parse(x.publishedAt)<Date.now()+86400_000);
+ const recent=unique.filter(x=>Date.now()-Date.parse(x.publishedAt)<(x.isLcf?5:2)*86400_000&&Date.parse(x.publishedAt)<Date.now()+86400_000);
  const local=recent.filter(x=>x.scope==="local").sort(sort).slice(0,70);
  const national=recent.filter(x=>x.scope!=="local").sort(sort).slice(0,20);
  const lcfWeight=(a:Article)=>/ascenso|campe[oó]n|final|suspend|primera [ab]|liga cordobesa|torneo|reprogram|clasificaci[oó]n|fecha [0-9]/i.test(a.title)?5:0;
  const lcf=local.filter(x=>x.isLcf).sort((a,b)=>lcfWeight(b)-lcfWeight(a)||Date.parse(b.publishedAt)-Date.parse(a.publishedAt)).slice(0,12);
  const items=[...local,...national].sort(sort);
  return NextResponse.json({items,localCount:local.length,nationalCount:national.length,lcf:lcf[0]||null,errors,updatedAt:new Date().toISOString()},{
-  headers:{"Cache-Control":"public, s-maxage=300, stale-while-revalidate=300"}
+  headers:{"Cache-Control":fresh?"no-store, max-age=0":"public, s-maxage=300, stale-while-revalidate=300"}
  });
 }

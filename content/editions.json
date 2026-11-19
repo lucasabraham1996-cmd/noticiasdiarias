@@ -1,4 +1,56 @@
 {
-  "lastUpdated": null,
-  "editions": []
+  "lastUpdated": "2026-11-18T22:20:00-03:00",
+  "editions": [
+    {
+      "id": "2026-11-18-tarde",
+      "edition": "tarde",
+      "publishedAt": "2026-11-18T18:00:00-03:00",
+      "title": "Córdoba: investigan un posible homicidio en La Cumbre y se acerca la definición del Clausura",
+      "summary": "Selección de noticias verificadas de este miércoles, con fuentes originales. La portada también incorpora titulares nuevos desde los medios consultados.",
+      "stories": [
+        {
+          "title": "La Cumbre: investigan como presunto homicidio el hallazgo de un cuerpo dentro de una camioneta incendiada",
+          "body": "El cuerpo fue hallado en una Toyota SW4 sobre la Ruta 38. La fiscal Paula Kelm encabeza la investigación y se realizan pericias para establecer la causa de muerte. La hipótesis de homicidio no equivale a una responsabilidad penal probada.",
+          "category": "Policiales",
+          "source": "Cba24n",
+          "url": "https://www.cba24n.com.ar/cordoba/camioneta-incendiada--identifican-el-cuerpo-calcinado-e-investigan-un-presunto-homicidio_a6afe0e012935c8aa80cfa6ab"
+        },
+        {
+          "title": "Presupuesto 2027: el Gobierno cordobés propuso rebajas impositivas",
+          "body": "Martín Llaryora presentó el proyecto presupuestario provincial con cambios en Inmobiliario e Ingresos Brutos. Los beneficios propuestos requieren trámite legislativo y todavía no deben presentarse como vigentes.",
+          "category": "Política",
+          "source": "La Nación",
+          "url": "https://www.lanacion.com.ar/politica/cordoba-llaryora-envia-senales-a-la-rosada-con-el-presupuesto-provincial-2027-nid16112026/"
+        },
+        {
+          "title": "Cayó 11,2% el consumo anual por habitante de carne vacuna",
+          "body": "Según CICCRA, el consumo estimado de carne vacuna bajó a 44,5 kilos por persona en el promedio de los últimos doce meses: 5,6 kilos menos que un año atrás. El dato refleja dificultades de consumo y cambios en el mercado.",
+          "category": "Economía",
+          "source": "Noticias Argentinas",
+          "url": "https://noticiasargentinas.com/economia/la-carne-vacuna-aumento-mas-que-la-inflacion-y-cada-argentino-come-5-6-kilos-menos-al-ano_a6afdb4104f169fd00c3bfc91?output=amp"
+        },
+        {
+          "title": "Vélez y Belgrano abren los octavos del Clausura el viernes a las 20",
+          "body": "La AFA programó el cruce en el estadio José Amalfitani para el viernes 20 de noviembre, con transmisión anunciada por TNT Sports. Es partido de eliminación directa, aún no disputado al cierre de esta edición.",
+          "category": "Deportes",
+          "source": "AFA",
+          "url": "https://www.afa.com.ar/es/posts/programacion-de-los-octavos-de-final-del-torneo-clausura"
+        },
+        {
+          "title": "Liga Profesional: el Clausura 2026 tiene confirmada la agenda de octavos",
+          "body": "Ocho cruces entre el viernes 20 y el miércoles 25 de noviembre. Los equipos mejor clasificados serán locales según el reglamento de la fase eliminatoria; no se publican marcadores de encuentros que aún no se jugaron.",
+          "category": "Deportes",
+          "source": "Liga Profesional",
+          "url": "https://www.lpf.org.ar/notas/primera/2026/11/11/agenda-de-los-octavos-de-final-2/"
+        },
+        {
+          "title": "El caso de La Cumbre: la fiscalía busca determinar cómo ocurrió la muerte",
+          "body": "ElDoce informó que el vehículo fue encontrado incendiado y que la causa pasó a investigarse como homicidio. Todavía se necesitan peritajes para confirmar la mecánica del hecho y cualquier intervención de terceros.",
+          "category": "Córdoba",
+          "source": "El Doce",
+          "url": "https://artear-eldoce-prod.web.arc-cdn.net/actualidad/2026/11/18/investigan-como-un-crimen-el-hallazgo-de-un-hombre-calcinado-en-una-camioneta-en-cordoba/"
+        }
+      ]
+    }
+  ]
 }

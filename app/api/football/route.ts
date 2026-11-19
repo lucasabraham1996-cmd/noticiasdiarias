@@ -53,10 +53,10 @@ const stat = (entry: any, names: string[]): number | null => {
   const row = (entry?.stats || []).find((x: any) => names.includes(x.name));
   return num(row?.value ?? row?.displayValue);
 };
-async function espn(path: string, revalidate: number): Promise<JsonRecord> {
+async function espn(path: string, revalidate: number, fresh=false): Promise<JsonRecord> {
   const response = await fetch(root + path, {
     headers: { Accept: "application/json" },
-    next: { revalidate },
+    ...(fresh ? {cache: "no-store" as const} : {next: {revalidate}}),
     signal: AbortSignal.timeout(12000)
   });
   if (!response.ok) throw new Error("ESPN no respondió correctamente (HTTP " + response.status + ")");
@@ -99,6 +99,7 @@ function games(json: JsonRecord, leagueName: string): Game[] {
       id,
       date: String(event.date || c.date || ""),
       league: String(json.leagues?.[0]?.name || leagueName),
+      leagueLogo: logo(json.leagues?.[0]) || null,
       round: String(event.season?.slug || json.leagues?.[0]?.season?.type?.abbreviation || "").replace(/-/g, " ") || null,
       venue: c.venue?.fullName || null,
       referee: c.officials?.find((x: any) => /referee/i.test(x?.position?.name || x?.position?.displayName || ""))?.displayName || null,
@@ -169,9 +170,9 @@ const TOP20_COUNTRIES: string[][] = [
 ];
 const countrySlug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z ]/g,"").trim().replace(/ +/g," ");
 const relevantNationalTeam = (name: string): boolean => TOP20_COUNTRIES.some(aliases=>aliases.includes(countrySlug(name)));
-async function nationalGames(date: string, name: string): Promise<SportsData> {
+async function nationalGames(date: string, name: string, fresh=false): Promise<SportsData> {
  const slugs = ["fifa.friendly","uefa.nations","fifa.world","fifa.worldq.uefa","fifa.worldq.conmebol","fifa.worldq.concacaf"];
- const requests = await Promise.allSettled(slugs.map(slug=>espn("/apis/site/v2/sports/soccer/"+slug+"/scoreboard?dates="+date.replace(/-/g,"")+"&limit=150",45)));
+ const requests = await Promise.allSettled(slugs.map(slug=>espn("/apis/site/v2/sports/soccer/"+slug+"/scoreboard?dates="+date.replace(/-/g,"")+"&limit=150",45,fresh)));
  const matches: Game[] = [];
  let successes=0;
  for(const result of requests){
@@ -188,6 +189,7 @@ async function nationalGames(date: string, name: string): Promise<SportsData> {
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams;
+  const fresh=q.has("refresh");
   const code = q.get("league") || "arg";
   const info = leagueInfo(code);
   const date = q.get("date") || new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Cordoba" });
@@ -221,9 +223,9 @@ export async function GET(req: NextRequest) {
     const rows=await Promise.allSettled(list.map(async code=>{
       if(code==="arg-fem")return (await womenArgMatches(date)).matches||[];
       if(code==="proyeccion")return (await proyeccionMatches(date)).matches||[];
-      if(code==="selecciones")return (await nationalGames(date,"Selecciones")).matches||[];
+      if(code==="selecciones")return (await nationalGames(date,"Selecciones",fresh)).matches||[];
       const slug=ESPN[code];if(!slug)return [];
-      const data=await espn("/apis/site/v2/sports/soccer/"+slug+"/scoreboard?dates="+date.replace(/-/g,"")+"&limit=100",20);
+      const data=await espn("/apis/site/v2/sports/soccer/"+slug+"/scoreboard?dates="+date.replace(/-/g,"")+"&limit=100",20,fresh);
       return games(data,leagueInfo(code).name);
     }));
     const matches=rows.flatMap((r)=>r.status==="fulfilled"?r.value:[]);
@@ -235,7 +237,7 @@ export async function GET(req: NextRequest) {
   if (code === "selecciones") {
     if(mode === "standings") return NextResponse.json({connected:true,league:info.name,updatedAt:now,standings:[],scorers:[],assisters:[],error:"Las selecciones se presentan con partidos destacados del top 20 FIFA. Ranking masculino al 7/10/2026."});
     try {
-      const matches = await nationalGames(date,info.name);
+      const matches = await nationalGames(date,info.name,fresh);
       return NextResponse.json(matches,{headers:{"Cache-Control":"public, s-maxage=20, stale-while-revalidate=20"}});
     } catch {
       return NextResponse.json({connected:false,league:info.name,updatedAt:now,error:"La fuente gratuita de selecciones no respondió. No mostramos resultados ficticios."});
@@ -264,7 +266,7 @@ export async function GET(req: NextRequest) {
       };
       return NextResponse.json(data, { headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=300" } });
     }
-    const j = await espn(prefix + "/scoreboard?dates=" + date.replace(/-/g, "") + "&limit=100", 20);
+    const j = await espn(prefix + "/scoreboard?dates=" + date.replace(/-/g, "") + "&limit=100", 20,fresh);
     return NextResponse.json({
       connected: true, updatedAt: now, league: info.name, matches: games(j, info.name)
     } satisfies SportsData, { headers: { "Cache-Control": "public, s-maxage=45, stale-while-revalidate=45" } });
