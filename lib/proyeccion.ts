@@ -1,5 +1,6 @@
 import type {Game,SportsData} from "@/lib/types";
 import {channel,officialCrest} from "@/lib/branding";
+import {RESERVA_SNAPSHOT,RESERVA_SNAPSHOT_DATE,RESERVA_SNAPSHOT_SOURCE} from "@/lib/reserva-snapshot";
 // Programación de la Fecha 18 del Torneo Proyección Clausura 2026,
 // fuente oficial Liga Profesional, actualizada al 13/11/2026.
 const source="https://www.ligaprofesional.ar/notas/proyeccion/2026/11/13/agenda-de-la-18/";
@@ -48,6 +49,9 @@ const games:Game[]=fixtures.map((x,i)=>{
 });
 
 const statsSource="https://promediosinfo.com/liga/reserva.html";
+// Resultados finalizados contrastados con Promedios Info al 20/11/2026.
+const confirmedResults:[number,number][]=[[4,0],[4,0],[0,2],[3,0],[1,1],[1,0],[0,0],[3,2],[1,1],[2,2],[0,1],[0,3],[0,2],[1,0],[2,3],[3,1],[2,0],[1,7]];
+const verifiedGames=games.map((g,i)=>({...g,homeScore:confirmedResults[i][0],awayScore:confirmedResults[i][1],status:"FT",sourceName:"Promedios Info",sourceUrl:RESERVA_SNAPSHOT_SOURCE}));
 const plain=(s:string)=>s.replace(/<[^>]*>/g,"").replace(/&amp;/gi,"&").replace(/&nbsp;/gi," ").replace(/\s+/g," ").trim();
 const key=(s:string)=>plain(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"").replace(/juniorsjuniors/g,"juniors").replace(/sarsfield/g,"").replace(/carriloeste/g,"").replace(/^(clubatletico|ca)/g,"");
 async function reserveHtml():Promise<string>{
@@ -84,13 +88,13 @@ export async function proyeccionMatches(date:string):Promise<SportsData>{
  const scheduled=games.filter(g=>g.date.slice(0,10)===date);
  try{
   const sourced=fromSource(await reserveHtml()),byId=new Map(sourced.map(g=>[g.id,g]));
-  const matches=scheduled.map(g=>byId.get(g.id)||g);
+  const matches=scheduled.map(g=>byId.get(g.id)||verifiedGames.find(x=>x.id===g.id)||g);
   return {connected:true,updatedAt,league:"Torneo Proyección · Clausura 2026",matches,
    sourceName:"Liga Profesional / Promedios Info",sourceUrl:statsSource,
    message:scheduled.length?"Fixture oficial; resultados actualizados desde fuente especializada cuando están disponibles.":"Consultá Playoffs para los cuartos confirmados y Estadísticas para ambas zonas."};
  }catch{
-  return {connected:true,updatedAt,league:"Torneo Proyección · Clausura 2026",matches:scheduled,
-   message:"Fixture confirmado por LPF; los marcadores aún no pudieron verificarse.",sourceUrl:source,sourceName:"Liga Profesional de Fútbol"};
+  return {connected:true,updatedAt,league:"Torneo Proyección · Clausura 2026",matches:scheduled.map(g=>verifiedGames.find(x=>x.id===g.id)||g),
+   message:"Resultados verificados al 20/11/2026: se usa respaldo cuando la consulta directa de Reserva falla.",sourceUrl:statsSource,sourceName:"Promedios Info"};
  }
 }
 export async function proyeccionStandings():Promise<SportsData>{
@@ -114,8 +118,9 @@ export async function proyeccionStandings():Promise<SportsData>{
   return {connected:true,updatedAt,league:"Torneo Proyección · Clausura 2026",standings,scorers:[],assisters:[],
    sourceName:"Promedios Info",sourceUrl:statsSource,message:"Zona A y B. Los cuatro mejores de cada grupo avanzan a cuartos."};
  }catch{
-  return {connected:true,updatedAt,league:"Torneo Proyección · Clausura 2026",standings:[],scorers:[],assisters:[],
-   error:"La fuente de Reserva no publicó una tabla legible. Los cruces confirmados están en Playoffs.",
-   sourceName:"Liga Profesional",sourceUrl:"https://www.ligaprofesional.ar/proyeccion-clausura-2026/"};
+  const standings:import("@/lib/types").Standing[]=RESERVA_SNAPSHOT.map(([group,rank,team,points,played,won,drawn,lost,gd])=>({group,rank,team,points,played,won,drawn,lost,gd,logo:logo(team)}));
+  return {connected:true,updatedAt,league:"Torneo Proyección · Clausura 2026",standings,scorers:[],assisters:[],
+   message:"Posiciones verificadas al "+RESERVA_SNAPSHOT_DATE+". Respaldo usado mientras la fuente en vivo no entrega la tabla al servidor.",
+   sourceName:"Promedios Info",sourceUrl:RESERVA_SNAPSHOT_SOURCE};
  }
 }
