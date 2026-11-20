@@ -79,7 +79,8 @@ function rows(html:string):Game[]{
 const fallback=[["2026-11-15","17:30","San Luis FC","San Lorenzo"],["2026-11-16","11:00","Boca Juniors","Ferro Carril Oeste"],
  ["2026-11-16","15:00","SAT","River Plate"],["2026-11-16","15:00","Huracán","Gimnasia La Plata"],
  ["2026-11-16","15:00","Unión (Santa Fe)","Racing Club"],["2026-11-16","15:00","Lanús","Talleres (Córdoba)"],
- ["2026-11-16","17:00","Belgrano (Córdoba)","Banfield"],["2026-11-17","14:00","Independiente","Newell's Old Boys"]].map(row=>{
+ ["2026-11-16","17:00","Belgrano (Córdoba)","Banfield"],["2026-11-17","14:00","Independiente","Newell's Old Boys"],
+ ["2026-11-19","16:00","Ferro Carril Oeste","River Plate"],["2026-11-23","10:00","River Plate","Talleres (Córdoba)"]].map(row=>{
  const date=row[0]+"T"+row[1]+":00-03:00";
  return {id:idFor(date,row[2],row[3]),date:new Date(date).toISOString(),league:"Primera División femenina · Argentina",category:"femenino",round:"Fecha 14 · Clausura",venue:null,referee:null,broadcasts:[channel("LPF Play")!],home:row[2],away:row[3],homeLogo:crest(row[2]),awayLogo:crest(row[3]),homeScore:null,awayScore:null,status:"NS",elapsed:null} satisfies Game;
 });
@@ -103,7 +104,7 @@ export async function womenArgMatches(date:string):Promise<SportsData>{
 }
 export async function womenArgStandings():Promise<SportsData>{
  const updatedAt=new Date().toISOString();
- const source="https://elfemenino.com.ar/tabla-de-posiciones/";
+ const source="https://elfemenino.com.ar/primeradivision/";
  try{
   const response=await fetch(source,{next:{revalidate:900},headers:{"Accept":"text/html","User-Agent":"Mozilla/5.0 (compatible; NoticiasDiarias/1.0)"},signal:AbortSignal.timeout(9000)});
   if(!response.ok)throw Error("Tabla femenina HTTP "+response.status);
