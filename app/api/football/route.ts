@@ -205,8 +205,8 @@ export async function GET(req: NextRequest) {
   if(code==="proyeccion")return NextResponse.json(mode==="standings"?await proyeccionStandings():await proyeccionMatches(date),{headers:{"Cache-Control":"public, s-maxage=120, stale-while-revalidate=120"}});
   if(code==="federal-a")return NextResponse.json(mode==="standings"?await federalAStandings():await federalAMatches(date),{headers:{"Cache-Control":"public, s-maxage=120, stale-while-revalidate=120"}});
   if(code==="trofeo-proyeccion")return NextResponse.json({
-   connected:true,league:info.name,updatedAt:now,matches:[],standings:[],scorers:[],assisters:[],
-   message:"Trofeo de Campeones de Proyección 2026: final programada por la LPF el 15 de diciembre. Equipos a confirmar tras los torneos.",
+   connected:true,league:info.name,updatedAt:now,matches:mode==="standings"?[]:[{id:880005,date:new Date("2026-12-15T12:00:00-03:00").toISOString(),league:info.name,round:"Final · equipos y horario a confirmar",category:"reserva",home:"Campeón Apertura",away:"Campeón Clausura",homeLogo:null,awayLogo:null,homeScore:null,awayScore:null,status:"NS",elapsed:null,venue:null,referee:null,timeTBD:true}],standings:[],scorers:[],assisters:[],
+   message:"Trofeo de Campeones de Proyección 2026: final prevista el 15 de diciembre. Equipos y horario aún sin confirmar.",
    sourceName:"Liga Profesional de Fútbol",sourceUrl:"https://www.ligaprofesional.ar/proyeccion-clausura-2026/"
   });
   if(code==="trofeo")return NextResponse.json(trofeoMessage());
