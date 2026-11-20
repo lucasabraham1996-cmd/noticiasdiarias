@@ -79,7 +79,6 @@ export async function GET(req:NextRequest){
   const pick=(test:RegExp)=>matches.filter(m=>test.test(m.round||"")).sort((a,b)=>a.date.localeCompare(b.date));
   const f=pick(/^final/i);
   const rounds:Round[]=[
-   {name:"16avos de final",matches:pick(/round of 32|rd of 32|round.of.32/i)},
    {name:"Octavos de final",matches:pick(/round of 16|rd of 16|octavos/i)},
    {name:"Cuartos de final",matches:pick(/quarter|cuartos/i)},
    {name:"Semifinales",matches:pick(/semi/i)},
