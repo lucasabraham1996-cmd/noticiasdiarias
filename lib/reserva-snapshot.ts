@@ -1,0 +1,43 @@
+// Posiciones verificadas de Reserva Clausura 2026, corte 20/11/2026 (Promedios Info).
+// Se usa exclusivamente como respaldo cuando el sitio de origen no devuelve tablas desde el servidor.
+export const RESERVA_SNAPSHOT_DATE="2026-11-20";
+export const RESERVA_SNAPSHOT_SOURCE="https://promediosinfo.com/liga/reserva.html";
+// [group,rank,team,points,played,won,drawn,lost,gd,gf,gc]
+export const RESERVA_SNAPSHOT: Array<[string,number,string,number,number,number,number,number,number,number,number]>=[
+ ["Clausura · Zona A", 1, "Talleres Córdoba", 35, 18, 10, 5, 22, 3, 36, 14],
+ ["Clausura · Zona A", 2, "Vélez Sársfield", 33, 18, 9, 6, 16, 3, 22, 6],
+ ["Clausura · Zona A", 3, "River Plate", 33, 18, 8, 9, 15, 1, 32, 17],
+ ["Clausura · Zona A", 4, "Gimnasia Mendoza", 32, 18, 9, 5, 6, 4, 21, 15],
+ ["Clausura · Zona A", 5, "Rosario Central", 29, 18, 7, 8, 2, 3, 23, 21],
+ ["Clausura · Zona A", 6, "Godoy Cruz", 28, 18, 7, 7, 6, 4, 25, 19],
+ ["Clausura · Zona A", 7, "Sarmiento", 25, 18, 6, 7, 2, 5, 17, 15],
+ ["Clausura · Zona A", 8, "San Lorenzo", 24, 18, 7, 3, 0, 8, 21, 21],
+ ["Clausura · Zona A", 9, "Instituto", 23, 18, 5, 8, -5, 5, 23, 28],
+ ["Clausura · Zona A", 10, "Unión Santa Fe", 21, 18, 4, 9, 6, 5, 24, 18],
+ ["Clausura · Zona A", 11, "Gimnasia La Plata", 20, 18, 5, 5, 2, 8, 19, 17],
+ ["Clausura · Zona A", 12, "Racing Club", 20, 18, 4, 8, -8, 6, 29, 37],
+ ["Clausura · Zona A", 13, "Aldosivi", 19, 18, 4, 7, -5, 7, 14, 19],
+ ["Clausura · Zona A", 14, "Atlético Tucumán", 19, 18, 4, 7, -10, 7, 14, 24],
+ ["Clausura · Zona A", 15, "Argentinos Juniors", 18, 18, 4, 6, -12, 8, 14, 26],
+ ["Clausura · Zona A", 16, "Barracas Central", 16, 18, 3, 7, -12, 8, 12, 24],
+ ["Clausura · Zona A", 17, "Banfield", 16, 18, 4, 4, -14, 10, 17, 31],
+ ["Clausura · Zona A", 18, "Tigre", 15, 18, 4, 3, -13, 11, 18, 31],
+ ["Clausura · Zona B", 1, "Independiente", 41, 18, 12, 5, 25, 1, 39, 14],
+ ["Clausura · Zona B", 2, "Lanús", 37, 18, 11, 4, 14, 3, 39, 25],
+ ["Clausura · Zona B", 3, "Boca Juniors", 34, 18, 10, 4, 13, 4, 25, 12],
+ ["Clausura · Zona B", 4, "Estudiantes La Plata", 33, 18, 9, 6, 16, 3, 34, 18],
+ ["Clausura · Zona B", 5, "Deportivo Riestra", 33, 18, 10, 3, 12, 5, 33, 21],
+ ["Clausura · Zona B", 6, "Belgrano Córdoba", 29, 18, 8, 5, 0, 5, 24, 24],
+ ["Clausura · Zona B", 7, "Estudiantes Rio Cuarto", 27, 18, 6, 9, 3, 3, 17, 14],
+ ["Clausura · Zona B", 8, "Atl. Rafaela", 25, 18, 6, 7, -2, 5, 23, 25],
+ ["Clausura · Zona B", 9, "Newell's Old Boys", 24, 18, 5, 9, 5, 4, 26, 21],
+ ["Clausura · Zona B", 10, "Huracán", 23, 18, 6, 5, 1, 7, 17, 16],
+ ["Clausura · Zona B", 11, "Defensa y Justicia", 22, 18, 5, 7, -2, 6, 24, 26],
+ ["Clausura · Zona B", 12, "Quilmes", 21, 18, 5, 6, -5, 7, 16, 21],
+ ["Clausura · Zona B", 13, "Independiente Riva.", 21, 18, 6, 3, -8, 9, 24, 32],
+ ["Clausura · Zona B", 14, "San Martín San Juan", 17, 18, 4, 5, -15, 9, 15, 30],
+ ["Clausura · Zona B", 15, "Colón", 16, 18, 4, 4, -11, 10, 15, 26],
+ ["Clausura · Zona B", 16, "Central Córdoba SdE", 16, 18, 4, 4, -12, 10, 15, 27],
+ ["Clausura · Zona B", 17, "Platense", 11, 18, 1, 8, -13, 9, 11, 24],
+ ["Clausura · Zona B", 18, "Ferro", 9, 18, 1, 6, -19, 11, 11, 30],
+];
