@@ -63,7 +63,7 @@ function rows(html:string):Game[]{
   const diff=now-Date.parse(dateISO);
   const status=score?(diff>=2.25*3600_000?"FT":diff>=0?"LIVE":"NS"):"NS";
   games.push({
-   id:idFor(dateISO,home,away),date:dateISO,league:"Primera División femenina · Argentina",
+   id:idFor(dateISO,home,away),date:dateISO,league:"Primera División femenina · Argentina",category:"femenino",
    round:cells[ix+1]?.replace(/^WD\d+\s*/,"").trim()||"Torneo Clausura",
    venue:null,referee:null,
    broadcasts:/^2026-11-(16|17)$/.test(dateISO.slice(0,10))?[channel("LPF Play")!]:[],
@@ -81,7 +81,7 @@ const fallback=[["2026-11-15","17:30","San Luis FC","San Lorenzo"],["2026-11-16"
  ["2026-11-16","15:00","Unión (Santa Fe)","Racing Club"],["2026-11-16","15:00","Lanús","Talleres (Córdoba)"],
  ["2026-11-16","17:00","Belgrano (Córdoba)","Banfield"],["2026-11-17","14:00","Independiente","Newell's Old Boys"]].map(row=>{
  const date=row[0]+"T"+row[1]+":00-03:00";
- return {id:idFor(date,row[2],row[3]),date:new Date(date).toISOString(),league:"Primera División femenina · Argentina",round:"Fecha 14 · Clausura",venue:null,referee:null,broadcasts:[channel("LPF Play")!],home:row[2],away:row[3],homeLogo:crest(row[2]),awayLogo:crest(row[3]),homeScore:null,awayScore:null,status:"NS",elapsed:null} satisfies Game;
+ return {id:idFor(date,row[2],row[3]),date:new Date(date).toISOString(),league:"Primera División femenina · Argentina",category:"femenino",round:"Fecha 14 · Clausura",venue:null,referee:null,broadcasts:[channel("LPF Play")!],home:row[2],away:row[3],homeLogo:crest(row[2]),awayLogo:crest(row[3]),homeScore:null,awayScore:null,status:"NS",elapsed:null} satisfies Game;
 });
 async function scrape():Promise<Game[]>{
  const r=await fetch(sourceUrl,{next:{revalidate:90},headers:{"Accept":"text/html","User-Agent":"Mozilla/5.0 (compatible; NoticiasDiarias/1.0)"},signal:AbortSignal.timeout(9000)});

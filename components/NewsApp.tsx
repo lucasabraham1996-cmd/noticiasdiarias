@@ -83,18 +83,18 @@ function ArticleReader({item,onClose}:{item:Article;onClose:()=>void}){
 }
 function Crest({url,name,compact=false}:{url:string|null;name:string;compact?:boolean}){
  const [attempt,setAttempt]=useState(0);
- useEffect(()=>setAttempt(0),[url]);
+ useEffect(()=>setAttempt(0),[url,name]);
  const talleres=/^talleres(?: \(c[oó]rdoba\)| cba)?$/i.test(name.trim())||/talleres de c[oó]rdoba/i.test(name);
- const official=talleres?"https://www.clubtalleres.com.ar/wp-content/uploads/2025/03/escudo-2-estrellas-x2-251x300.png":url;
- const valid=safe(official);
- const proxy=valid&&["a.espncdn.com","www.clubtalleres.com.ar"].includes(new URL(valid).hostname)?"/api/escudo?src="+encodeURIComponent(valid):valid;
- const shown=attempt===0?proxy:attempt===1?valid:null;
+ const alternatives=[...(talleres?["https://www.clubtalleres.com.ar/wp-content/uploads/2025/03/escudo-2-estrellas-x2-251x300.png"]:[]),url,...(talleres?["https://a.espncdn.com/i/teamlogos/soccer/500/19.png"]:[])];
+ const sources=[...new Set(alternatives.filter((s):s is string=>Boolean(safe(s))))];
+ const target=sources[Math.floor(attempt/2)]||null;
+ const proxied=target&&["a.espncdn.com","www.clubtalleres.com.ar"].includes(new URL(target).hostname);
+ const shown=target?(proxied&&attempt%2===0?"/api/escudo?src="+encodeURIComponent(target)+"&v=20261120":target):null;
  const initials=name.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
  return <span className={"crest-wrap"+(compact?" crest-small":"")} title={"Escudo de "+name}>
-  {shown?<img src={shown} alt={"Escudo "+name} referrerPolicy="no-referrer" onError={()=>setAttempt(v=>v+1)} loading="lazy"/>:<span className="crest-monogram" title="Escudo oficial no disponible">{initials||"—"}</span>}
+  {shown?<img src={shown} alt={"Escudo "+name} referrerPolicy="no-referrer" onError={()=>setAttempt(v=>v+1)} loading="lazy"/>:<span className="crest-monogram" title="Escudo no disponible">{initials||"—"}</span>}
  </span>;
 }
-
 function hailDescription(h:WeatherHour|{hail:"possible"|"not-quantified"}){return h.hail==="possible"?"Granizo posible":"Sin % disponible"}
 function WeatherCard({data,compact=false}:{data:WeatherData|null;compact?:boolean}){
  if(!data)return <section className="weather-panel"><CloudSun size={34}/><h3>El tiempo en Córdoba</h3><p>Consultando el pronóstico meteorológico...</p></section>;
@@ -136,8 +136,19 @@ function ClockInfo({m}:{m:Game}){
  return <>{display?display+" · ":""}EN VIVO</>;
 }
 function LeagueBrand({game}:{game:Game}){const leagueLogo=safe(game.leagueLogo);const [failed,setFailed]=useState(false);useEffect(()=>setFailed(false),[game.leagueLogo]);return <span className="match-league-brand">{leagueLogo&&!failed?<img src={leagueLogo} alt={"Logo de "+game.league} loading="lazy" referrerPolicy="no-referrer" onError={()=>setFailed(true)}/>:<Trophy size={18} aria-label="Logo no disponible"/>}<b>{game.league}</b></span>}
-function Score({m}:{m:Game}){const live=["1H","2H","HT","ET","BT","P","LIVE","INT"].includes(m.status);const done=["FT","AET","PEN"].includes(m.status);return <article className="match">
- <div className="match-league-header"><LeagueBrand game={m}/><span className={live?"live-label":""}><ClockInfo m={m}/></span></div><div className="match-top"><span>{m.round||"Partido de fútbol"}</span><span>{dateText(m.date)}</span></div>
+type MatchCategory="masculino"|"reserva"|"femenino";
+function matchCategory(m:Game):MatchCategory{
+ if(m.category)return m.category;
+ if(/proyecci[oó]n|reserva/i.test(m.league))return "reserva";
+ if(/femenin|women|nwsl|frauen|liga f\b|premi[eè]re ligue/i.test(m.league))return "femenino";
+ return "masculino";
+}
+function CategoryLabel({game}:{game:Game}){
+ const category=matchCategory(game);
+ return <span className={"match-category match-category-"+category}>{category==="femenino"?"Femenino":category==="reserva"?"Reserva":"Masculino"}</span>;
+}
+function Score({m}:{m:Game}){const live=["1H","2H","HT","ET","BT","P","LIVE","INT"].includes(m.status);const done=["FT","AET","PEN"].includes(m.status);return <article className={"match match-"+matchCategory(m)}>
+ <div className="match-league-header"><LeagueBrand game={m}/><div className="match-header-right"><CategoryLabel game={m}/><span className={live?"live-label":""}><ClockInfo m={m}/></span></div></div><div className="match-top"><span>{m.round||"Partido de fútbol"}</span><span>{dateText(m.date)}</span></div>
  <div className="match-center"><div className="team"><Crest url={m.homeLogo} name={m.home}/><strong>{displayTeam(m.home)}</strong></div><div className="score"><strong>{m.homeScore==null?"VS":m.homeScore+" – "+(m.awayScore??"–")}</strong><small>{live?"En juego":done?"Finalizado":timeText(m.date)}</small></div><div className="team"><Crest url={m.awayLogo} name={m.away}/><strong>{displayTeam(m.away)}</strong></div></div>
  {(m.venue||m.referee)&&<div className="match-foot">{m.venue}{m.referee?" · Árbitro: "+m.referee:""}</div>}
  <BroadcastInfo game={m}/>
@@ -149,7 +160,7 @@ function PlayoffPanel({data,league}:{data:BracketData|null;league:string}){
  return <div className="playoff-root">
   <div className="playoff-heading"><div><span>FASE ELIMINATORIA · {league==="arg"?"TORNEO CLAUSURA 2026":"TORNEO REDUCIDO 2026"}</span><h2>Camino a la final</h2></div><a href={data.source} target="_blank" rel="noopener noreferrer">Fuente: {data.sourceName} <ArrowUpRight size={15}/></a></div>
   <p className="playoff-intro">{data.message}</p>
-  <div className="playoff-stages">{data.rounds?.map(round=><section className="playoff-stage" key={round.name}><div className="playoff-round-title"><Trophy size={17}/><h3>{round.name}</h3><span>{round.matches.length?round.matches.length+" cruces":"Pendiente"}</span></div>{round.matches.length?<div className="playoff-games">{round.matches.map(match=><div className="playoff-game" key={match.id}><div className="playoff-league"><LeagueBrand game={match}/></div><div className="playoff-game-top"><span>{new Intl.DateTimeFormat("es-AR",{timeZone:tz,day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}).format(new Date(match.date))}</span><span>{match.status==="FT"?"FINAL":["LIVE","1H","2H","HT"].includes(match.status)?"EN VIVO":"PROGRAMADO"}</span></div><div className="playoff-clubs"><div><Crest url={match.homeLogo} name={match.home} compact/><span>{displayTeam(match.home)}</span><b>{match.homeScore??"–"}</b></div><div><Crest url={match.awayLogo} name={match.away} compact/><span>{displayTeam(match.away)}</span><b>{match.awayScore??"–"}</b></div></div></div>)}</div>:<div className="playoff-pending">Cruces a definir según los resultados de la fase anterior.</div>}</section>)}</div>
+  <div className="playoff-stages">{data.rounds?.map(round=><section className="playoff-stage" key={round.name}><div className="playoff-round-title"><Trophy size={17}/><h3>{round.name}</h3><span>{round.matches.length?round.matches.length+" cruces":"Pendiente"}</span></div>{round.matches.length?<div className="playoff-games">{round.matches.map(match=><div className={"playoff-game match-"+matchCategory(match)} key={match.id}><div className="playoff-league"><LeagueBrand game={match}/><CategoryLabel game={match}/></div><div className="playoff-game-top"><span>{new Intl.DateTimeFormat("es-AR",{timeZone:tz,day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}).format(new Date(match.date))}</span><span>{match.status==="FT"?"FINAL":["LIVE","1H","2H","HT"].includes(match.status)?"EN VIVO":"PROGRAMADO"}</span></div><div className="playoff-clubs"><div><Crest url={match.homeLogo} name={match.home} compact/><span>{displayTeam(match.home)}</span><b>{match.homeScore??"–"}</b></div><div><Crest url={match.awayLogo} name={match.away} compact/><span>{displayTeam(match.away)}</span><b>{match.awayScore??"–"}</b></div></div></div>)}</div>:<div className="playoff-pending">Cruces a definir según los resultados de la fase anterior.</div>}</section>)}</div>
  </div>;
 }
 
@@ -174,6 +185,7 @@ function Sports({lcf,femaleLocal,onRead,refreshToken=0}:{lcf:Article|null;female
  useEffect(()=>{void load(refreshToken>0);const t=setInterval(()=>void load(),20000);return()=>clearInterval(t)},[load,refreshToken]);
  return <section><div className="section-head"><span className="eyebrow"><Activity size={16}/> CENTRO DEPORTIVO</span><h1>Todos los partidos. <em>Un solo lugar.</em></h1><p>Argentina, Europa y fútbol femenino, con estadísticas y fuentes deportivas conectadas.</p></div>
  <div className="gender-switch"><button className={gender==="Masculino"?"chosen":""} onClick={()=>{setGender("Masculino");setLeague("todos");setMode("matches")}}>Masculino</button><button className={gender==="Femenino"?"chosen":""} onClick={()=>{setGender("Femenino");setLeague("todos");setMode("matches")}}>Femenino</button></div>
+ <div className="category-legend"><span className="match-category match-category-masculino">Masculino</span><span className="match-category match-category-reserva">Reserva</span><span className="match-category match-category-femenino">Femenino</span></div>
  <div className="league-menu">{leagues.map(l=><button key={l.code} className={l.code===league?"selected":""} onClick={()=>{setLeague(l.code);if(l.code==="selecciones"||l.code==="todos"||mode==="playoffs"&&l.code!=="arg"&&l.code!=="nacional")setMode("matches")}}>{l.name}</button>)}</div>
  {league==="selecciones"&&<div className="ranking-note"><Globe size={19}/> Solo partidos donde participa al menos una selección del top 20 FIFA masculino, según el ranking oficial del 7 de octubre de 2026. <a href="https://inside.fifa.com/fifa-rankings/world-ranking/men" target="_blank" rel="noopener noreferrer">Ranking oficial ↗</a></div>}
  <div className="sports-toolbar"><div className="mode-buttons"><button className={mode==="matches"?"chosen":""} onClick={()=>setMode("matches")}>Partidos</button><button className={mode==="standings"?"chosen":""} disabled={league==="selecciones"||league==="todos"||league==="trofeo"||league==="supercopa-int"} onClick={()=>setMode("standings")}>Estadísticas</button>{gender==="Masculino"&&(league==="arg"||league==="nacional")&&<button className={mode==="playoffs"?"chosen":""} onClick={()=>setMode("playoffs")}>Playoffs</button>}</div><button className="refresh" onClick={()=>void load(true)}><RefreshCw size={16} className={busy?"spin":""}/> Actualizar</button></div>
@@ -198,7 +210,7 @@ function HomeLivePanel({games,updatedAt,onSports}:{games:Game[];updatedAt:string
  const finished=games.filter(m=>["FT","AET","PEN"].includes(m.status)).sort((a,b)=>b.date.localeCompare(a.date));
  const chosen=(live.length?live:future.length?future:finished).slice(0,4);
  return <section className="home-live"><div className="home-live-header"><div><span className="live-dot"/><strong>{live.length?"PARTIDOS EN VIVO":future.length?"PRÓXIMOS PARTIDOS":"RESULTADOS DE HOY"}</strong></div><button onClick={onSports}>Todos los partidos <ArrowRight size={16}/></button></div>
- {chosen.length?<div className="home-live-list">{chosen.map(m=><div className="home-live-match" key={m.id+"-"+m.league}><div className="home-live-league"><LeagueBrand game={m}/></div><div className="home-live-teams"><div><Crest url={m.homeLogo} name={m.home} compact/><span>{displayTeam(m.home)}</span></div><b>{m.homeScore==null||m.awayScore==null?"vs":m.homeScore+" - "+m.awayScore}</b><div><Crest url={m.awayLogo} name={m.away} compact/><span>{displayTeam(m.away)}</span></div></div><small>{LIVE_STATES.includes(m.status)?<ClockInfo m={m}/>:m.status==="FT"?"FINAL":timeText(m.date)}</small><BroadcastInfo game={m} compact/></div>)}</div>:<div className="home-no-live"><Activity size={26}/><b>Sin partidos confirmados en vivo en este momento.</b><small>Consultá el calendario completo en Deportes.</small></div>}
+ {chosen.length?<div className="home-live-list">{chosen.map(m=><div className={"home-live-match match-"+matchCategory(m)} key={m.id+"-"+m.league}><div className="home-live-league"><LeagueBrand game={m}/><CategoryLabel game={m}/></div><div className="home-live-teams"><div><Crest url={m.homeLogo} name={m.home} compact/><span>{displayTeam(m.home)}</span></div><b>{m.homeScore==null||m.awayScore==null?"vs":m.homeScore+" - "+m.awayScore}</b><div><Crest url={m.awayLogo} name={m.away} compact/><span>{displayTeam(m.away)}</span></div></div><small>{LIVE_STATES.includes(m.status)?<ClockInfo m={m}/>:m.status==="FT"?"FINAL":timeText(m.date)}</small><BroadcastInfo game={m} compact/></div>)}</div>:<div className="home-no-live"><Activity size={26}/><b>Sin partidos confirmados en vivo en este momento.</b><small>Consultá el calendario completo en Deportes.</small></div>}
  <div className="home-live-footer"><span>Datos sujetos a la actualización de cada fuente</span><button onClick={onSports}>Ir a Deportes <ChevronRight size={16}/></button></div>
  </section>;
 }

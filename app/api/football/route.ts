@@ -46,7 +46,8 @@ const num = (x: unknown): number | null => {
   return null;
 };
 const logo = (t: any): string | null => {
-  const url = t?.logo || t?.logos?.find((i: any) => (i?.rel || []).includes("default"))?.href || t?.logos?.[0]?.href;
+  const choices=[...(Array.isArray(t?.logos)?t.logos:[]).map((i:any)=>i?.href),t?.logo];
+  const url=choices.find((x:unknown)=>typeof x==="string"&&x.includes("/500/"))||choices.find((x:unknown)=>typeof x==="string"&&x.startsWith("https://"));
   return typeof url === "string" && /^https:\/\//.test(url) ? url : null;
 };
 const stat = (entry: any, names: string[]): number | null => {
@@ -78,7 +79,7 @@ function matchStatus(x: any): { status: string; elapsed: number | null } {
   if (state === "in") return { status: num(x?.status?.period) === 1 ? "1H" : "2H", elapsed: minute };
   return { status: "NS", elapsed: null };
 }
-function games(json: JsonRecord, leagueName: string): Game[] {
+function games(json: JsonRecord, leagueName: string, category:Game["category"]="masculino"): Game[] {
   const found: Game[] = [];
   for (const event of json.events || []) {
     const c = event.competitions?.[0];
@@ -97,6 +98,7 @@ function games(json: JsonRecord, leagueName: string): Game[] {
     const started = state.status !== "NS" && state.status !== "PST" && state.status !== "CANC";
     found.push({
       id,
+      category,
       date: String(event.date || c.date || ""),
       league: String(json.leagues?.[0]?.name || leagueName),
       leagueLogo: logo(json.leagues?.[0]) || null,
@@ -226,7 +228,7 @@ export async function GET(req: NextRequest) {
       if(code==="selecciones")return (await nationalGames(date,"Selecciones",fresh)).matches||[];
       const slug=ESPN[code];if(!slug)return [];
       const data=await espn("/apis/site/v2/sports/soccer/"+slug+"/scoreboard?dates="+date.replace(/-/g,"")+"&limit=100",20,fresh);
-      return games(data,leagueInfo(code).name);
+      return games(data,leagueInfo(code).name,code.endsWith("-fem")?"femenino":"masculino");
     }));
     const matches=rows.flatMap((r)=>r.status==="fulfilled"?r.value:[]);
     matches.sort((a,b)=>a.date.localeCompare(b.date));
@@ -268,7 +270,7 @@ export async function GET(req: NextRequest) {
     }
     const j = await espn(prefix + "/scoreboard?dates=" + date.replace(/-/g, "") + "&limit=100", 20,fresh);
     return NextResponse.json({
-      connected: true, updatedAt: now, league: info.name, matches: games(j, info.name)
+      connected: true, updatedAt: now, league: info.name, matches: games(j, info.name, code.endsWith("-fem")?"femenino":"masculino")
     } satisfies SportsData, { headers: { "Cache-Control": "public, s-maxage=45, stale-while-revalidate=45" } });
   } catch (error) {
     console.warn("ESPN sports source unavailable", error instanceof Error ? error.message : "unknown");

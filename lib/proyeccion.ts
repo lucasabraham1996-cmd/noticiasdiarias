@@ -41,7 +41,7 @@ function logo(team:string):string|null{
 }
 const games:Game[]=fixtures.map((x,i)=>{
  const [day,time,home,away,round,venue]=x;
- return {id:900000+i,league:"Torneo Proyección · Clausura 2026",round:"Fecha 18 · "+round,
+ return {id:900000+i,league:"Torneo Proyección · Clausura 2026",category:"reserva",round:"Fecha 18 · "+round,
  date:new Date(day+"T"+time+":00-03:00").toISOString(),venue,referee:null,home,away,
  homeLogo:logo(home),awayLogo:logo(away),homeScore:null,awayScore:null,status:"NS",elapsed:null,
  broadcasts:[channel("LPF Play")!],sourceName:"Liga Profesional de Fútbol",sourceUrl:source};

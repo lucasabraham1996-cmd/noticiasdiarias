@@ -374,3 +374,24 @@ tr.danger{background:#ab4a5814}
 .playoff-league{display:flex;align-items:center;padding-bottom:8px;margin-bottom:7px;border-bottom:1px solid var(--line)}
 .playoff-league .match-league-brand{font-size:11px}
 .playoff-league .match-league-brand img{width:24px;height:24px}
+
+
+/* Identificación visual de categorías en todas las tarjetas de resultados */
+.match,.home-live-match,.playoff-game{--match-accent:#60a5fa;--match-rgb:96,165,250}
+.match-masculino{--match-accent:#60a5fa;--match-rgb:96,165,250}
+.match-reserva{--match-accent:#f7bd54;--match-rgb:247,189,84}
+.match-femenino{--match-accent:#f472b6;--match-rgb:244,114,182}
+.match{border-top:3px solid var(--match-accent)}
+.home-live-match{border-left:3px solid var(--match-accent)}
+.playoff-game{border-top:3px solid var(--match-accent)}
+.match-header-right{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap;text-align:right}
+.match-category{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;font-size:10px;line-height:1.2;font-weight:850;padding:5px 8px;border-radius:7px;border:1px solid rgba(var(--match-rgb),.45);color:var(--match-accent);background:rgba(var(--match-rgb),.12)}
+.match-category-masculino{--match-accent:#60a5fa;--match-rgb:96,165,250}
+.match-category-reserva{--match-accent:#f7bd54;--match-rgb:247,189,84}
+.match-category-femenino{--match-accent:#f472b6;--match-rgb:244,114,182}
+.category-legend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.home-live-league,.playoff-league{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.home-live-league .match-category{font-size:9px;padding:3px 6px;flex:none}
+.home-live-match .home-live-league .match-league-brand{color:var(--match-accent)}
+.match .match-league-brand svg,.playoff-game .match-league-brand svg{color:var(--match-accent)}
+@media(max-width:480px){.match-league-header{align-items:flex-start}.match-header-right{gap:5px}.match-header-right .match-category{font-size:9px;padding:4px 6px}.match-league-brand{font-size:11px}.home-live-league{align-items:flex-start}}
