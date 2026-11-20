@@ -5,7 +5,6 @@ import type {Game,Standing,SportsData} from "@/lib/types";
 const AFA="https://www.afa.com.ar/es/posts/la-agenda-de-la-afa";
 const TABLE="https://datopotrero.com/federal-a/2026/";
 const baseLeague="Torneo Federal A · Reválida 2026";
-const ids:Record<string,number>={"Cipolletti":null as unknown as number,"Olimpo":null as unknown as number};
 const logos:Record<string,number>={"Boca Juniors":5,"Platense":7764,"Estudiantes de La Plata":8,"Independiente Rivadavia":9744,"Rosario Central":17,"Banfield":235};
 function crest(team:string):string|null{return officialCrest(team,logos[team]?"https://a.espncdn.com/i/teamlogos/soccer/500/"+logos[team]+".png":null)}
 function simple(s:string):string{return s.replace(/<[^>]+>/g,"").replace(/&amp;/g,"&").replace(/&nbsp;|&#160;/g," ").replace(/\s+/g," ").trim()}
@@ -56,7 +55,7 @@ export async function federalAStandings():Promise<SportsData>{
 }
 export const otherCupFinals:Record<string,Game>={
  supercopa:fixture(880001,"2026-11-12","20:00","Estudiantes de La Plata","Independiente Rivadavia","Supercopa Argentina 2026","Final","AET",3,2,"https://www.afa.com.ar/es/posts/estudiantes-de-la-plata-se-consagro-campeon-de-la-supercopa-argentina-tras-vencer-a-independiente-rivadavia"),
- "supercopa-int":fixture(880002,"2026-09-26","16:00","Estudiantes de La Plata","Rosario Central","Supercopa Internacional 2026","Final","FT",1,3,"https://www.afa.com.ar/es/posts/supercopa-internacional-rosario-central-se-impuso-3-1-a-estudiantes-en-la-definicion-por-el-titulo")
+ "supercopa-int":fixture(880002,"2026-09-26",null,"Estudiantes de La Plata","Rosario Central","Supercopa Internacional 2026","Final","FT",1,3,"https://www.afa.com.ar/es/posts/supercopa-internacional-rosario-central-se-impuso-3-1-a-estudiantes-en-la-definicion-por-el-titulo")
 };
 export function otherCupMatches(code:string,day:string):SportsData{
  const g=otherCupFinals[code],now=new Date().toISOString();
