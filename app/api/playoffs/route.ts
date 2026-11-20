@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from "next/server";
 import type {Game} from "@/lib/types";
+import {fixture,copaFinal,federalAAllGames} from "@/lib/argentina-extra";
 export const dynamic="force-dynamic";
 type Round={name:string;matches:Game[]};
 const provider="https://site.api.espn.com/apis/site/v2/sports/soccer/";
@@ -69,8 +70,69 @@ async function espn(date:string,league:string):Promise<Game[]>{
 function dayDiff(date:string,now:Date){return Math.abs(Date.parse(date+"T12:00:00Z")-now.getTime())/86400000}
 export async function GET(req:NextRequest){
  const code=req.nextUrl.searchParams.get("league")||"arg";
- if(code!=="arg"&&code!=="nacional")return NextResponse.json({error:"Liga inválida"},{status:400});
+ if(!["arg","nacional","copa","federal-a","proyeccion"].includes(code))return NextResponse.json({error:"Liga inválida"},{status:400});
  const now=new Date();
+ if(code==="copa"){
+  const months=["202608","202609","202610","202611","202612"];
+  const batches=await Promise.allSettled(months.map(m=>espn(m,"arg.copa")));
+  const matches=[...new Map(batches.flatMap(p=>p.status==="fulfilled"?p.value:[]).map(m=>[m.id,m])).values()];
+  const pick=(test:RegExp)=>matches.filter(m=>test.test(m.round||"")).sort((a,b)=>a.date.localeCompare(b.date));
+  const f=pick(/^final/i);
+  const rounds:Round[]=[
+   {name:"16avos de final",matches:pick(/round of 32|rd of 32|round.of.32/i)},
+   {name:"Octavos de final",matches:pick(/round of 16|rd of 16|octavos/i)},
+   {name:"Cuartos de final",matches:pick(/quarter|cuartos/i)},
+   {name:"Semifinales",matches:pick(/semi/i)},
+   {name:"Final · 2 de diciembre",matches:f.length?f:[copaFinal]}
+  ];
+  return NextResponse.json({connected:true,league:"Copa Argentina 2026",rounds,
+   source:"https://www.afa.com.ar/es/posts/la-agenda-de-la-afa",sourceName:"AFA / ESPN",
+   message:"Llaves por ronda del torneo 2026: resultados de ESPN y final confirmada por AFA para el 2 de diciembre. Los horarios sin confirmar se indican expresamente.",
+   updatedAt:now.toISOString()},{headers:{"Cache-Control":"public, s-maxage=240, stale-while-revalidate=240"}});
+ }
+ if(code==="federal-a"){
+  const semifinal=federalAAllGames().filter(x=>x.round?.includes("Semifinal"));
+  const historical:Game[]=[
+   fixture(871001,"2026-10-23",null,"Juventud Antoniana","Sol de América de Formosa","Federal A · Reválida 2026","Octavos · ida","FT",3,0),
+   fixture(871002,"2026-10-31",null,"Sol de América de Formosa","Juventud Antoniana","Federal A · Reválida 2026","Octavos · vuelta","FT",0,3),
+   fixture(871003,"2026-10-25",null,"Sportivo Las Parejas","Alvarado","Federal A · Reválida 2026","Octavos · ida","FT",0,1),
+   fixture(871004,"2026-11-01",null,"Alvarado","Sportivo Las Parejas","Federal A · Reválida 2026","Octavos · vuelta","FT",1,2),
+   fixture(871005,"2026-10-25",null,"Sarmiento de La Banda","Atenas de Río Cuarto","Federal A · Reválida 2026","Octavos · ida","FT",3,0),
+   fixture(871006,"2026-11-01",null,"Atenas de Río Cuarto","Sarmiento de La Banda","Federal A · Reválida 2026","Octavos · vuelta","FT",4,2),
+   fixture(871007,"2026-11-08",null,"Juventud Antoniana","Cipolletti","Federal A · Reválida 2026","Cuartos · ida","FT",0,1),
+   fixture(871008,"2026-11-15",null,"Cipolletti","Juventud Antoniana","Federal A · Reválida 2026","Cuartos · vuelta","FT",3,0),
+   fixture(871009,"2026-11-08",null,"Sarmiento de La Banda","Alvarado","Federal A · Reválida 2026","Cuartos · ida","FT",1,0),
+   fixture(871010,"2026-11-15",null,"Alvarado","Sarmiento de La Banda","Federal A · Reválida 2026","Cuartos · vuelta","FT",0,0),
+   fixture(871011,"2026-11-07",null,"Douglas Haig","Gimnasia de Chivilcoy","Federal A · Reválida 2026","Cuartos · ida","FT",1,0),
+   fixture(871012,"2026-11-15",null,"Gimnasia de Chivilcoy","Douglas Haig","Federal A · Reválida 2026","Cuartos · vuelta","FT",2,2),
+   fixture(871013,"2026-11-12",null,"Kimberley","Olimpo","Federal A · Reválida 2026","Cuartos · ida","FT",1,1),
+   fixture(871014,"2026-11-17",null,"Olimpo","Kimberley","Federal A · Reválida 2026","Cuartos · vuelta","FT",1,1),
+  ];
+  const rounds:Round[]=[
+   {name:"Octavos de final · Reválida",matches:historical.filter(m=>m.round?.startsWith("Octavos"))},
+   {name:"Cuartos de final · Reválida",matches:historical.filter(m=>m.round?.startsWith("Cuartos"))},
+   {name:"Semifinales · Reválida",matches:semifinal},
+   {name:"Final · segundo ascenso",matches:[]},
+   {name:"Final · primer ascenso",matches:federalAAllGames().filter(m=>m.round?.includes("Final"))}
+  ];
+  return NextResponse.json({connected:true,league:"Torneo Federal A 2026",rounds,
+   source:"https://www.afa.com.ar/es/posts/la-agenda-de-la-afa",sourceName:"AFA / Tessirve",
+   message:"Reválida por el segundo ascenso: resultados de octavos y cuartos publicados por fuentes deportivas; semifinales de ida del 22 de noviembre confirmadas por AFA. Vuelta y final pendientes de programación.",
+   updatedAt:now.toISOString()},{headers:{"Cache-Control":"public, s-maxage=240, stale-while-revalidate=240"}});
+ }
+ if(code==="proyeccion"){
+  const q=[
+   fixture(872001,"2026-11-25",null,"Talleres (Córdoba)","Estudiantes de La Plata","Proyección · Reserva 2026","Cuartos de final"),
+   fixture(872002,"2026-11-25",null,"Lanús","River Plate","Proyección · Reserva 2026","Cuartos de final"),
+   fixture(872003,"2026-11-25",null,"Independiente","Gimnasia de Mendoza","Proyección · Reserva 2026","Cuartos de final"),
+   fixture(872004,"2026-11-25",null,"Vélez","Boca Juniors","Proyección · Reserva 2026","Cuartos de final")
+  ].map(g=>({...g,date:"",timeTBD:true,category:"reserva" as const}));
+  const rounds:Round[]=[{name:"Cuartos de final",matches:q},{name:"Semifinales",matches:[]},{name:"Final",matches:[]}];
+  return NextResponse.json({connected:true,league:"Torneo Proyección · Clausura 2026",rounds,
+   source:"https://promediosinfo.com/liga/reserva.html",sourceName:"Promedios Info",
+   message:"Cuartos confirmados según clasificación de las zonas A y B. Fechas y horarios pendientes de confirmación; los cruces de semifinal y final se publicarán cuando se definan.",
+   updatedAt:now.toISOString()},{headers:{"Cache-Control":"public, s-maxage=300, stale-while-revalidate=300"}});
+ }
  if(code==="arg"){
   const initial=octavos.map(game);
   const days=[...new Set(octavos.map(x=>x[0]))].filter(date=>dayDiff(date,now)<15 && Date.parse(date+"T00:00:00-03:00")<=Date.now()+86400000);
