@@ -109,7 +109,7 @@ export async function womenArgStandings():Promise<SportsData>{
   const response=await fetch(source,{next:{revalidate:900},headers:{"Accept":"text/html","User-Agent":"Mozilla/5.0 (compatible; NoticiasDiarias/1.0)"},signal:AbortSignal.timeout(9000)});
   if(!response.ok)throw Error("Tabla femenina HTTP "+response.status);
   const html=await response.text();
-  const anchor=html.search(/Torneo Clausura 2026/i);
+  const anchor=html.search(/TABLA DE POSICIONES CLAUSURA 2026|Clausura 2026/i);
   if(anchor<0)throw Error("No hay Clausura 2026");
   const tableHtml=html.slice(anchor).match(/<table\b[^>]*>([\s\S]*?)<\/table>/i)?.[1];
   if(!tableHtml)throw Error("No se encontró la tabla");
