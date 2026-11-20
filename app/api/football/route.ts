@@ -47,7 +47,7 @@ const num = (x: unknown): number | null => {
 };
 const logo = (t: any): string | null => {
   const choices=[...(Array.isArray(t?.logos)?t.logos:[]).map((i:any)=>i?.href),t?.logo];
-  const url=choices.find((x:unknown)=>typeof x==="string"&&x.includes("/500/"))||choices.find((x:unknown)=>typeof x==="string"&&x.startsWith("https://"));
+  const url=choices.find((x:unknown)=>typeof x==="string"&&x.includes("/500/"))||choices.find((x:unknown)=>typeof x==="string"&&x.startsWith("https://"))||(Number.isInteger(Number(t?.id))&&Number(t.id)>0?"https://a.espncdn.com/i/teamlogos/soccer/500/"+t.id+".png":null);
   return typeof url === "string" && /^https:\/\//.test(url) ? url : null;
 };
 const stat = (entry: any, names: string[]): number | null => {

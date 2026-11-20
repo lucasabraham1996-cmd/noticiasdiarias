@@ -395,3 +395,12 @@ tr.danger{background:#ab4a5814}
 .home-live-match .home-live-league .match-league-brand{color:var(--match-accent)}
 .match .match-league-brand svg,.playoff-game .match-league-brand svg{color:var(--match-accent)}
 @media(max-width:480px){.match-league-header{align-items:flex-start}.match-header-right{gap:5px}.match-header-right .match-category{font-size:9px;padding:4px 6px}.match-league-brand{font-size:11px}.home-live-league{align-items:flex-start}}
+
+
+/* Liga argentina fija en portada, con escudos verificables y última actualización */
+.home-live-header strong{letter-spacing:.35px;line-height:1.4}
+.home-live .crest-fallback{display:grid;place-items:center;width:100%;height:100%;color:#5c7b86}
+.crest-fallback{display:grid;place-items:center;width:100%;height:100%;color:#688b8d}
+.crest-small .crest-fallback{color:#66828b}
+.home-live-footer{align-items:center;gap:10px}
+.home-live-footer span{line-height:1.4}

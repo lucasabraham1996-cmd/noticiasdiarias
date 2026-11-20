@@ -1,6 +1,6 @@
 "use client";
 import {useCallback,useEffect,useMemo,useState} from "react";
-import {Activity,ArrowRight,ArrowUpRight,CalendarDays,ChevronRight,Cloud,CloudLightning,CloudRain,CloudSun,Compass,ExternalLink,Globe,Info,Landmark,MapPin,Menu,Newspaper,RefreshCw,Search,ShieldAlert,Sun,Trophy,WifiOff,X} from "lucide-react";
+import {Activity,ArrowRight,ArrowUpRight,CalendarDays,ChevronRight,Cloud,CloudLightning,CloudRain,CloudSun,Compass,ExternalLink,Globe,Info,Landmark,MapPin,Menu,Newspaper,RefreshCw,Search,Shield,ShieldAlert,Sun,Trophy,WifiOff,X} from "lucide-react";
 import {LEAGUES} from "@/lib/leagues";
 import type {Article,Category,Edition,Game,SportsData,WeatherData,WeatherHour} from "@/lib/types";
 const tabs=["Portada","Córdoba","Argentina","Política","Policiales","Economía","Deportes","Mundo","Espectáculos","El tiempo"] as const;
@@ -84,15 +84,17 @@ function ArticleReader({item,onClose}:{item:Article;onClose:()=>void}){
 function Crest({url,name,compact=false}:{url:string|null;name:string;compact?:boolean}){
  const [attempt,setAttempt]=useState(0);
  useEffect(()=>setAttempt(0),[url,name]);
- const talleres=/^talleres(?: \(c[oó]rdoba\)| cba)?$/i.test(name.trim())||/talleres de c[oó]rdoba/i.test(name);
- const alternatives=[...(talleres?["https://www.clubtalleres.com.ar/wp-content/uploads/2025/03/escudo-2-estrellas-x2-251x300.png"]:[]),url,...(talleres?["https://a.espncdn.com/i/teamlogos/soccer/500/19.png"]:[])];
- const sources=[...new Set(alternatives.filter((s):s is string=>Boolean(safe(s))))];
- const target=sources[Math.floor(attempt/2)]||null;
- const proxied=target&&["a.espncdn.com","www.clubtalleres.com.ar"].includes(new URL(target).hostname);
- const shown=target?(proxied&&attempt%2===0?"/api/escudo?src="+encodeURIComponent(target)+"&v=20261120":target):null;
- const initials=name.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
+ const talleres=/^talleres(?: \(c[oó]rdoba\)| c[oó]rdoba| cba| de c[oó]rdoba)?$/i.test(name.trim());
+ const official=talleres?"https://www.clubtalleres.com.ar/wp-content/uploads/2025/03/escudo-2-estrellas-x2-251x300.png":null;
+ const initialSources=[...new Set([official,url].filter((source):source is string=>Boolean(safe(source))))];
+ const alternatives=initialSources.flatMap(source=>{
+  const proxy=["a.espncdn.com","www.clubtalleres.com.ar"].includes(new URL(source).hostname);
+  return proxy?["/api/escudo?src="+encodeURIComponent(source)+"&v=20261120",source]:[source];
+ });
+ const resolver="/api/team-crest?name="+encodeURIComponent(name.trim());
+ const shown=[...alternatives,resolver][attempt]||null;
  return <span className={"crest-wrap"+(compact?" crest-small":"")} title={"Escudo de "+name}>
-  {shown?<img src={shown} alt={"Escudo "+name} referrerPolicy="no-referrer" onError={()=>setAttempt(v=>v+1)} loading="lazy"/>:<span className="crest-monogram" title="Escudo no disponible">{initials||"—"}</span>}
+  {shown?<img src={shown} alt={"Escudo "+name} referrerPolicy="no-referrer" onError={()=>setAttempt(v=>v+1)} loading="lazy"/>:<span className="crest-fallback" title={"No hay escudo verificado para "+name}><Shield size={compact?18:31} aria-label="Escudo no disponible"/></span>}
  </span>;
 }
 function hailDescription(h:WeatherHour|{hail:"possible"|"not-quantified"}){return h.hail==="possible"?"Granizo posible":"Sin % disponible"}
@@ -205,13 +207,15 @@ function WeatherPage({data}:{data:WeatherData|null}){
 }
 const LIVE_STATES=["1H","2H","HT","ET","BT","P","LIVE","INT"];
 function HomeLivePanel({games,updatedAt,onSports}:{games:Game[];updatedAt:string|null;onSports:()=>void}){
- const live=games.filter(m=>LIVE_STATES.includes(m.status));
- const future=games.filter(m=>m.status==="NS"&&Date.parse(m.date)>=Date.now()-15*60000).sort((a,b)=>a.date.localeCompare(b.date));
- const finished=games.filter(m=>["FT","AET","PEN"].includes(m.status)).sort((a,b)=>b.date.localeCompare(a.date));
- const chosen=(live.length?live:future.length?future:finished).slice(0,4);
- return <section className="home-live"><div className="home-live-header"><div><span className="live-dot"/><strong>{live.length?"PARTIDOS EN VIVO":future.length?"PRÓXIMOS PARTIDOS":"RESULTADOS DE HOY"}</strong></div><button onClick={onSports}>Todos los partidos <ArrowRight size={16}/></button></div>
- {chosen.length?<div className="home-live-list">{chosen.map(m=><div className={"home-live-match match-"+matchCategory(m)} key={m.id+"-"+m.league}><div className="home-live-league"><LeagueBrand game={m}/><CategoryLabel game={m}/></div><div className="home-live-teams"><div><Crest url={m.homeLogo} name={m.home} compact/><span>{displayTeam(m.home)}</span></div><b>{m.homeScore==null||m.awayScore==null?"vs":m.homeScore+" - "+m.awayScore}</b><div><Crest url={m.awayLogo} name={m.away} compact/><span>{displayTeam(m.away)}</span></div></div><small>{LIVE_STATES.includes(m.status)?<ClockInfo m={m}/>:m.status==="FT"?"FINAL":timeText(m.date)}</small><BroadcastInfo game={m} compact/></div>)}</div>:<div className="home-no-live"><Activity size={26}/><b>Sin partidos confirmados en vivo en este momento.</b><small>Consultá el calendario completo en Deportes.</small></div>}
- <div className="home-live-footer"><span>Datos sujetos a la actualización de cada fuente</span><button onClick={onSports}>Ir a Deportes <ChevronRight size={16}/></button></div>
+ const live=games.some(m=>LIVE_STATES.includes(m.status));
+ const today=localDate();
+ const todayMatches=games.some(m=>localDate(new Date(m.date))===today);
+ const upcoming=games.some(m=>m.status==="NS"&&Date.parse(m.date)>=Date.now()-15*60000);
+ const chosen=games.slice(0,6);
+ const kind=live?"EN VIVO":todayMatches?"PARTIDOS DE HOY":upcoming?"PRÓXIMOS PARTIDOS":"ÚLTIMOS RESULTADOS";
+ return <section className="home-live"><div className="home-live-header"><div><span className="live-dot"/><strong>FÚTBOL ARGENTINO · {kind}</strong></div><button onClick={onSports}>Ver Deportes <ArrowRight size={16}/></button></div>
+ {chosen.length?<div className="home-live-list">{chosen.map(m=><div className={"home-live-match match-"+matchCategory(m)} key={m.id+"-"+m.league}><div className="home-live-league"><LeagueBrand game={m}/><CategoryLabel game={m}/></div><div className="home-live-teams"><div><Crest url={m.homeLogo} name={m.home} compact/><span>{displayTeam(m.home)}</span></div><b>{m.homeScore==null||m.awayScore==null?"vs":m.homeScore+" - "+m.awayScore}</b><div><Crest url={m.awayLogo} name={m.away} compact/><span>{displayTeam(m.away)}</span></div></div><small>{dateText(m.date)} · {LIVE_STATES.includes(m.status)?<ClockInfo m={m}/>:["FT","AET","PEN"].includes(m.status)?"FINAL":timeText(m.date)}</small><BroadcastInfo game={m} compact/></div>)}</div>:<div className="home-no-live"><Activity size={26}/><b>No se recibieron partidos argentinos verificados.</b><small>La portada no reemplaza los partidos nacionales por resultados de otras ligas.</small></div>}
+ <div className="home-live-footer"><span>Partidos verificados de fuentes deportivas · {updatedAt?"Actualización: "+timeText(updatedAt):"Actualizando..."}</span><button onClick={onSports}>Ver calendario <ChevronRight size={16}/></button></div>
  </section>;
 }
 
@@ -242,9 +246,15 @@ export default function NewsApp(){
  const [refreshing,setRefreshing]=useState(false),[lastRefresh,setLastRefresh]=useState<string|null>(null),[refreshNote,setRefreshNote]=useState(""),[sportsRefreshToken,setSportsRefreshToken]=useState(0);
  const [tab,setTab]=useState<Tab>("Portada"),[news,setNews]=useState<Article[]>([]),[lcfHeadline,setLcfHeadline]=useState<Article|null>(null),[weather,setWeather]=useState<WeatherData|null>(null),[edition,setEdition]=useState<Edition|null>(null),[menu,setMenu]=useState(false),[search,setSearch]=useState("");
  const getHomeScores=useCallback(async(fresh=false)=>{
-  const rs=await Promise.allSettled(["Masculino","Femenino"].map(gender=>fetch("/api/football?"+new URLSearchParams({league:"todos",gender,date:localDate(),mode:"matches"})+(fresh?"&refresh="+Date.now():""),{cache:"no-store"}).then(r=>r.json())));
-  const all:Game[]=[];for(const x of rs)if(x.status==="fulfilled"&&x.value?.connected&&Array.isArray(x.value.matches))all.push(...x.value.matches);
-  setHomeGames([...new Map(all.map(x=>[x.id+"|"+x.league,x])).values()]);setScoresUpdated(new Date().toISOString());return rs.some(x=>x.status==="fulfilled"&&x.value?.connected);
+  try{
+   const r=await fetch("/api/home-football"+(fresh?"?refresh="+Date.now():""),{cache:"no-store"});
+   if(!r.ok)return false;
+   const data=await r.json();
+   if(!data.connected)return false;
+   setHomeGames(Array.isArray(data.matches)?data.matches:[]);
+   setScoresUpdated(data.updatedAt||new Date().toISOString());
+   return true;
+  }catch{return false}
  },[]);
  useEffect(()=>{if(tab!=="Portada")return;void getHomeScores();const refresh=setInterval(()=>void getHomeScores(),60000);return()=>clearInterval(refresh)},[tab,getHomeScores]);
  const getNews=useCallback(async(fresh=false)=>{try{const r=await fetch("/api/news"+(fresh?"?refresh="+Date.now():""),{cache:"no-store"});if(!r.ok)return false;const j=await r.json();setNews(j.items||[]);setLcfHeadline(j.lcf||null);return !j.errors?.length||Boolean(j.items?.length)}catch{return false}},[]);

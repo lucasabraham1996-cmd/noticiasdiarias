@@ -28,7 +28,7 @@ const knownTeamIds:Record<string,number>={
 };
 export function officialCrest(team:string,provided:string|null):string|null{
  const value=team.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
- if(/talleres/.test(value)&&!/remedios|berrotaran|perico/i.test(value))return TALLERES_OFFICIAL_CREST;
+ if(/^talleres(?: \(cordoba\)| cordoba| cba| de cordoba)?$/.test(value))return TALLERES_OFFICIAL_CREST;
  if(provided&&/^https:\/\//.test(provided))return provided;
  const key=value.replace(/\s*\((cordoba|santa fe)\)/g,"").replace(/[^a-z0-9' ]/g," ").replace(/\s+/g," ").trim();
  const id=knownTeamIds[key];
