@@ -3,6 +3,7 @@ import { leagueInfo, seasonOf } from "@/lib/leagues";
 import { officialCrest, channel } from "@/lib/branding";
 import { proyeccionMatches, proyeccionStandings } from "@/lib/proyeccion";
 import { womenArgMatches, womenArgStandings } from "@/lib/women-arg";
+import { federalAMatches, federalAStandings, federalAAllGames, otherCupMatches, otherCupFinals, copaFinal, trofeoMessage } from "@/lib/argentina-extra";
 import type { Game, Standing, Player, SportsData } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -202,29 +203,38 @@ export async function GET(req: NextRequest) {
   }
   if (code === "arg-fem") return NextResponse.json(mode === "standings" ? await womenArgStandings() : await womenArgMatches(date), {headers:{"Cache-Control":"public, s-maxage=60, stale-while-revalidate=60"}});
   if(code==="proyeccion")return NextResponse.json(mode==="standings"?await proyeccionStandings():await proyeccionMatches(date),{headers:{"Cache-Control":"public, s-maxage=120, stale-while-revalidate=120"}});
-  if(code==="federal-a")return NextResponse.json({
-   connected:true,league:info.name,updatedAt:now,matches:[],standings:[],scorers:[],assisters:[],
-   message:"Torneo Federal A 2026: Campeonato y Reválida, con fases eliminatorias. Consultá los resultados oficiales; la fuente gratuita actual no publica un marcador minuto a minuto verificado.",
-   sourceName:"Asociación del Fútbol Argentino",sourceUrl:"https://www.afa.com.ar/es/posts/torneo-federal-a-definidos-los-cruces-de-los-cuartos-de-final"
-  });
+  if(code==="federal-a")return NextResponse.json(mode==="standings"?await federalAStandings():await federalAMatches(date),{headers:{"Cache-Control":"public, s-maxage=120, stale-while-revalidate=120"}});
   if(code==="trofeo-proyeccion")return NextResponse.json({
    connected:true,league:info.name,updatedAt:now,matches:[],standings:[],scorers:[],assisters:[],
    message:"Trofeo de Campeones de Proyección 2026: final programada por la LPF el 15 de diciembre. Equipos a confirmar tras los torneos.",
    sourceName:"Liga Profesional de Fútbol",sourceUrl:"https://www.ligaprofesional.ar/proyeccion-clausura-2026/"
   });
-  if(code==="trofeo"||code==="supercopa-int")return NextResponse.json({
-   connected:true,league:info.name,updatedAt:now,matches:[],standings:[],scorers:[],assisters:[],
-   message:code==="trofeo"?"Trofeo de Campeones 2026: final programada el 19 de diciembre en el estadio Mario Alberto Kempes, Córdoba. Equipos a confirmar.":"Supercopa Internacional 2026: final disputada el 26 de septiembre. Rosario Central ganó a Estudiantes por 3–1.",
-   sourceName:"Liga Profesional de Fútbol",sourceUrl:"https://www.ligaprofesional.ar/"
-  });
+  if(code==="trofeo")return NextResponse.json(trofeoMessage());
+  if(code==="supercopa-int"||code==="supercopa")return NextResponse.json(mode==="standings"?
+   {connected:true,updatedAt:now,league:info.name,standings:[],message:"La supercopa se disputa a un partido, no tiene tabla de posiciones."}:otherCupMatches(code,date));
+  if(code==="copa"&&mode==="matches"){
+   let found:Game[]=[];
+   try{
+    const j=await espn("/apis/site/v2/sports/soccer/arg.copa/scoreboard?dates="+date.replace(/-/g,"")+"&limit=100",60,fresh);
+    found=games(j,"Copa Argentina");
+   }catch{}
+   if(found.length===0&&date>="2026-11-15"&&date<="2026-12-02")found=[copaFinal];
+   return NextResponse.json({connected:true,updatedAt:now,league:"Copa Argentina 2026",matches:found,
+    message:found.length===1&&found[0].id===copaFinal.id?"Final confirmada para el 2 de diciembre: Boca vs Platense. Horario a confirmar. El cuadro completo está en Playoffs.":"Cruces publicados por ESPN; para consultar todas las rondas, entrá en Playoffs.",
+    sourceName:"ESPN / AFA",sourceUrl:"https://www.afa.com.ar/es/posts/la-agenda-de-la-afa"},
+    {headers:{"Cache-Control":"public, s-maxage=120, stale-while-revalidate=120"}});
+  }
   if(code==="todos"){
     if(mode==="standings")return NextResponse.json({connected:true,updatedAt:now,league:"TODOS",standings:[],message:"Elegí una liga para consultar su tabla particular."});
     const gender=q.get("gender")==="Femenino"?"Femenino":"Masculino";
     const list=gender==="Femenino"?["arg-fem","eng-fem","esp-fem","fra-fem","nws-fem","uefa-fem"]:
-      ["arg","nacional","copa","supercopa","primera-b","primera-c","premier","laliga","seriea","bundesliga","ligue1","champions","selecciones","proyeccion"];
+      ["arg","nacional","copa","supercopa","supercopa-int","federal-a","primera-b","primera-c","premier","laliga","seriea","bundesliga","ligue1","champions","selecciones","proyeccion"];
     const rows=await Promise.allSettled(list.map(async code=>{
       if(code==="arg-fem")return (await womenArgMatches(date)).matches||[];
       if(code==="proyeccion")return (await proyeccionMatches(date)).matches||[];
+      if(code==="federal-a")return federalAAllGames().filter(g=>g.date.slice(0,10)===date);
+      if(code==="supercopa-int"||code==="supercopa")return [otherCupFinals[code]].filter(g=>g&&g.date.slice(0,10)===date);
+      if(code==="copa"&&date==="2026-12-02")return [copaFinal];
       if(code==="selecciones")return (await nationalGames(date,"Selecciones",fresh)).matches||[];
       const slug=ESPN[code];if(!slug)return [];
       const data=await espn("/apis/site/v2/sports/soccer/"+slug+"/scoreboard?dates="+date.replace(/-/g,"")+"&limit=100",20,fresh);
