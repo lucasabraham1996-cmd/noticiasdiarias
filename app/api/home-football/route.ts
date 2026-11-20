@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from "next/server";
 import {officialCrest} from "@/lib/branding";
 import {proyeccionMatches} from "@/lib/proyeccion";
+import {federalAAllGames,copaFinal,otherCupFinals} from "@/lib/argentina-extra";
 import {womenArgMatches} from "@/lib/women-arg";
 import type {Game} from "@/lib/types";
 
@@ -93,7 +94,7 @@ export async function GET(req:NextRequest){
   proyeccionMatches(today).then(d=>d.matches||[])
  ];
  const results=await Promise.allSettled(jobs);
- let matches=results.flatMap(result=>result.status==="fulfilled"?result.value:[]);
+ let matches=[...results.flatMap(result=>result.status==="fulfilled"?result.value:[]),...federalAAllGames(),copaFinal,...Object.values(otherCupFinals)];
  let connected=results.some(result=>result.status==="fulfilled");
  if(!matches.length){
   const previous=await Promise.allSettled(sources.slice(0,2).map(source=>monthly(source,monthKey(addMonth(base,-1)),fresh)));
